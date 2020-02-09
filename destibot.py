@@ -124,7 +124,7 @@ modes_to_functions = {
 
 
 def process_message(message, chatid):
-    global modes, states
+    global states
     if chatid not in states:
         states[chatid] = {}
     state = states[chatid]
@@ -149,9 +149,16 @@ def fetchLatestUpdate():
 
 def handle_update(update, basic_bot_url):
     send_message = "sendMessage"
-    chatid, text = update["message"]["from"]["id"], update["message"]["text"]
-    # failt bei leerer Liste
-    responses = process_message(text, chatid)
+    if "message" not in update or "from" not in update["message"]:
+        # Not sure what to do here
+        return
+    chatid = update["message"]["from"]["id"]
+    if "text" not in update["message"]:
+        responses = [confused]
+    else:
+        text = update["message"]["text"]
+        # failt bei leerer Liste
+        responses = process_message(text, chatid)
     # fstring refactor
     for response in responses[:-1]:
         requests.get(
@@ -162,7 +169,7 @@ def handle_update(update, basic_bot_url):
 
 
 def task():
-    global latest_update_served, config
+    global latest_update_served
     telegram_api_url = "https://api.telegram.org"
     bot_token = config["bot_token"]
     get_updates = "getUpdates"
@@ -172,7 +179,6 @@ def task():
     res = req.json()["result"]
     for update in res:
         update_id = update["update_id"]
-        print(update_id)
         if update_id > latest_update_served:
             latest_update_served = update_id
             handle_update(update, basic_bot_url)
