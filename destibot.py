@@ -6,10 +6,11 @@ import time
 import re
 from itertools import chain
 
-isFirstIteration = True
-latestDealtUpdate = 0
+latest_update_served = 0
 with open("eastereggs.json") as f:
     modes = json.load(f)
+with open('config.json') as f:
+    config = json.load(f)
 states = {}
 
 
@@ -146,38 +147,38 @@ def fetchLatestUpdate():
     return
 
 
+def handle_update(update, basic_bot_url):
+    send_message = "sendMessage"
+    chatid, text = update["message"]["from"]["id"], update["message"]["text"]
+    # failt bei leerer Liste
+    responses = process_message(text, chatid)
+    # fstring refactor
+    for response in responses[:-1]:
+        requests.get(
+            f"{basic_bot_url}/{send_message}?chat_id={chatid}&text={response}")
+        time.sleep(0.3)
+    requests.get(
+        f"{basic_bot_url}/{send_message}?chat_id={chatid}&text={responses[-1]}")
+
+
 def task():
-    dice_text = u'🎲'
+    global latest_update_served, config
     telegram_api_url = "https://api.telegram.org"
-    with open('config.json') as f:
-        config = json.load(f)
     bot_token = config["bot_token"]
     get_updates = "getUpdates"
-    send_message = "sendMessage"
     basic_bot_url = f"{telegram_api_url}/bot{bot_token}"
-    req = requests.get(f"{basic_bot_url}/{get_updates}")
+    update_request_url = f"{basic_bot_url}/{get_updates}?offset={latest_update_served+1}"
+    req = requests.get(update_request_url)
     res = req.json()["result"]
-    res = res[len(res)-1]
-    currentUpdate = res["update_id"]
-    global isFirstIteration
-    global latestDealtUpdate
-    if currentUpdate > latestDealtUpdate:
-        chatid, text = res["message"]["from"]["id"], res["message"]["text"]
-        # failt bei leerer Liste
-        responses = process_message(text, chatid)
-        # fstring refactor
-        for response in responses[:-1]:
-            requests.get(
-                f"{basic_bot_url}/{send_message}?chat_id={chatid}&text={response}")
-            time.sleep(0.3)
-        requests.get(
-            f"{basic_bot_url}/{send_message}?chat_id={chatid}&text={responses[-1]}")
-        isFirstIteration = False
-        latestDealtUpdate = currentUpdate
-    return
+    for update in res:
+        update_id = update["update_id"]
+        print(update_id)
+        if update_id > latest_update_served:
+            latest_update_served = update_id
+            handle_update(update, basic_bot_url)
 
 
 if __name__ == "__main__":
-    while(True):
+    while True:
         task()
         time.sleep(0.3)
