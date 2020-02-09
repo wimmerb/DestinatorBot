@@ -1,42 +1,152 @@
-import string, random, json, requests, time
-
-#In Datei auslagern
-#Eastereggs mit Gewichten?
-#2 Bearbtungsmodi: Persons und Query
-eastereggs = {'residenz': ('Nils', 'Niklas', 'Marius'), 'collector' : ('Maxi', 'Jakob', 'Matthias', 'Jonas'), 'hw25' : ('Simon', 'Fabi', 'Flo', 'Bene')}
+import string
+import random
+import json
+import requests
+import time
+import re
+from itertools import chain
 
 isFirstIteration = True
 latestDealtUpdate = 0
+with open("eastereggs.json") as f:
+    modes = json.load(f)
+states = {}
 
 
-
-def extract_choices (msg):
-    #... anderer Vorschlag: nur nach Kommas trennen lassen
-    #sicherstellen dass wir nen String haben
-    #Problem: zerstoert Kontrollsequenz für Emojis
-    list = None
-    if ',' in msg:
-        list = msg.split(',')
-    else:
-        list = [a for a in msg.split() if a != '']
-    list = replace_eastereggs(list)
-    return list
-
-def replace_eastereggs (list):
-    for key in eastereggs.keys():
-        while key in list:
-            pos = list.index(key)
-            list[pos:pos+1] = eastereggs[key]
-    return list
-
-def choose (choice_list):
+def choose(choice_list):
     return random.choice(choice_list)
 
-def fetchLatestUpdate ():
+
+def extract_choices(msg):
+    # ... anderer Vorschlag: nur nach Kommas trennen lassen
+    # sicherstellen dass wir nen String haben
+    # Problem: zerstoert Kontrollsequenz für Emojis
+    l = None
+    if ',' in msg:
+        l = msg.split(',')
+    else:
+        l = [a for a in msg.split() if a != '']
+    return l
+
+
+three_dices = [u'🎲', u'🎲🎲', u'🎲🎲🎲']
+
+confused = "I'm not sure what you are saying 🤔 Can you use some /help?"
+
+
+def do_yes(state, message, info):
+    expecting_go = state.get('expecting_go', False)
+    expecting_help = state.get('expecting_help', False)
+    if expecting_go:
+        choice = choose(state['choices'])
+        state['expecting_go'] = False
+        return three_dices + [choice]
+    elif expecting_help:
+        state['expecting_help'] = False
+        return ["Ok, sure! Try this to press this: /help"]
+    else:
+        state['expecting_help'] = True
+        return [confused]
+
+
+def do_no(state, message, info):
+    expecting_go = state.get('expecting_go', False)
+    expecting_help = state.get('expecting_help', False)
+    if expecting_go:
+        return ["Ok! You can add some more choices:"]
+    elif expecting_help:
+        state['expecting_help'] = False
+        return ["Ok, sure!"]
+    else:
+        state['expecting_help'] = True
+        return [confused]
+
+
+def do_start(state, message, info):
+    welcome = """Hey there!
+This is your destinator!
+Can I help you find your destiny today?
+If you are unsure what to do, you can try /help"""
+    return [welcome]
+
+
+def do_help(state, message, info):
+    state['expecting_help'] = False
+    suggestions = info['suggestions']
+    welcome = info['welcome']
+    return [welcome] + suggestions
+
+
+def do_query(state, message, info):
+    state['expecting_go'] = True
+    state['choices'] = list(info['choices'])
+    query = info.get('query', "Ready to find your destiny?")
+    choice_text = info.get('choice_text', "These are your choices:")
+    state['query'] = query
+    state['choice_text'] = choice_text
+    return [choice_text] + state['choices'] + [query]
+
+
+def do_persons(state, message, info):
+    items = extract_choices(message)
+    patterns = info['patterns']
+    choices = info['choices']
+
+    def replace(choice):
+        for pattern in patterns:
+            if re.match(pattern, choice):
+                return choices
+        return [choice]
+    choices = list(chain(*map(replace, items)))
+    choice = choose(choices)
+    return three_dices + [choice]
+
+
+def do_default(state, message):
+    items = extract_choices(message)
+    expecting_go = state.get('expecting_go', False)
+    if expecting_go:
+        state['choices'] += items
+        return [state['choice_text']] + state['choices'] + [state['query']]
+    choice = choose(items)
+    return three_dices + [choice]
+
+
+modes_to_functions = {
+    "yes": do_yes,
+    "no": do_no,
+    "start": do_start,
+    "help": do_help,
+    "persons": do_persons,
+    "query": do_query
+}
+
+
+def process_message(message, chatid):
+    global modes, states
+    if chatid not in states:
+        states[chatid] = {}
+    state = states[chatid]
+    for name, info in modes.items():
+        patterns = info["patterns"]
+        ignore_case = info.get("ignore_case", True)
+        flags = 0
+        if ignore_case:
+            flags |= re.IGNORECASE
+        for pattern in patterns:
+            if re.match(pattern, message, flags):
+                handler = modes_to_functions[info['mode']]
+                response = handler(state, message, info)
+                return response
+    response = do_default(state, message)
+    return response
+
+
+def fetchLatestUpdate():
     return
 
 
-def task ():
+def task():
     dice_text = u'🎲'
     telegram_api_url = "https://api.telegram.org"
     with open('config.json') as f:
@@ -44,7 +154,7 @@ def task ():
     bot_token = config["bot_token"]
     get_updates = "getUpdates"
     send_message = "sendMessage"
-    basic_bot_url = f"{telegram_api_url}/{bot_token}"
+    basic_bot_url = f"{telegram_api_url}/bot{bot_token}"
     req = requests.get(f"{basic_bot_url}/{get_updates}")
     res = req.json()["result"]
     res = res[len(res)-1]
@@ -53,26 +163,21 @@ def task ():
     global latestDealtUpdate
     if currentUpdate > latestDealtUpdate:
         chatid, text = res["message"]["from"]["id"], res["message"]["text"]
-        #failt bei leerer Liste
-        choicetext = choose(extract_choices(text))
-        print(choicetext)
-        #fstring refactor
-        requests.get(f"{basic_bot_url}/{send_message}?chat_id="+str(chatid)+"&text=" + dice_text)
-        time.sleep(0.3)
-        requests.get(f"{basic_bot_url}/{send_message}?chat_id="+str(chatid)+"&text=" + dice_text+dice_text)
-        time.sleep(0.3)
-        requests.get(f"{basic_bot_url}/{send_message}?chat_id="+str(chatid)+"&text=" + dice_text+dice_text+dice_text)
-        time.sleep(0.3)
-        requests.get(f"{basic_bot_url}/{send_message}?chat_id="+str(chatid)+"&text=" + choicetext)
-        print(f"{basic_bot_url}/{send_message}?chat_id="+str(chatid)+"&text=" + choicetext)
+        # failt bei leerer Liste
+        responses = process_message(text, chatid)
+        # fstring refactor
+        for response in responses[:-1]:
+            requests.get(
+                f"{basic_bot_url}/{send_message}?chat_id={chatid}&text={response}")
+            time.sleep(0.3)
+        requests.get(
+            f"{basic_bot_url}/{send_message}?chat_id={chatid}&text={responses[-1]}")
         isFirstIteration = False
         latestDealtUpdate = currentUpdate
     return
+
 
 if __name__ == "__main__":
     while(True):
         task()
         time.sleep(0.3)
-
-
-

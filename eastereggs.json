@@ -1,0 +1,103 @@
+{
+    "residenz": {
+        "patterns": [
+            "residenz"
+        ],
+        "mode": "persons",
+        "choices": [
+            "Nils",
+            "Niklas",
+            "Marius"
+        ]
+    },
+    "collector": {
+        "patterns": [
+            "collector"
+        ],
+        "mode": "persons",
+        "choices": [
+            "Maxi",
+            "Jakob",
+            "Matthias",
+            "Jonas"
+        ]
+    },
+    "hw25": {
+        "patterns": [
+            "hw25"
+        ],
+        "mode": "persons",
+        "choices": [
+            "Simon",
+            "Fabi",
+            "Flo",
+            "Bene"
+        ]
+    },
+    "drinks": {
+        "patterns": [
+            "Was\\s([sw]ollen\\swir\\s)?trinken\\??",
+            "Trinken",
+            "Drinks",
+            "/drinks"
+        ],
+        "mode": "query",
+        "choices": [
+            "Helles",
+            "Weißbier"
+        ]
+    },
+    "food": {
+        "patterns": [
+            "food",
+            "/food"
+        ],
+        "mode": "query",
+        "choices": [
+            "🍣",
+            "🍕"
+        ]
+    },
+    "yes": {
+        "patterns": [
+            "ja",
+            "yes",
+            "Y",
+            "jop?",
+            "yo",
+            "goo*",
+            "yea?h?",
+            "yup",
+            "sure"
+        ],
+        "mode": "yes"
+    },
+    "no": {
+        "patterns": [
+            "no",
+            "nö"
+        ],
+        "mode": "no"
+    },
+    "start": {
+        "patterns": [
+            "/start",
+            "hi",
+            "hey"
+        ],
+        "mode": "start"
+    },
+    "help": {
+        "patterns": [
+            "/help"
+        ],
+        "mode": "help",
+        "suggestions": [
+            "1,2,3,4",
+            "🍺 🍷",
+            "/food",
+            "Was sollen wir trinken?"
+        ],
+        "welcome": "Try one of these:"
+    }
+}
