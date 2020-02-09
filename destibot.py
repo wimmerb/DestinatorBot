@@ -1,11 +1,14 @@
 import string, random, json, requests, time
 
+#In Datei auslagern
+#Eastereggs mit Gewichten?
+#2 Bearbtungsmodi: Persons und Query
 eastereggs = {'residenz': ('Nils', 'Niklas', 'Marius'), 'collector' : ('Maxi', 'Jakob', 'Matthias', 'Jonas'), 'hw25' : ('Simon', 'Fabi', 'Flo', 'Bene')}
 
 isFirstIteration = True
 latestDealtUpdate = 0
 
-diceText = u'🎲'
+
 
 def extract_choices (msg):
     #... anderer Vorschlag: nur nach Kommas trennen lassen
@@ -15,7 +18,7 @@ def extract_choices (msg):
     if ',' in msg:
         list = msg.split(',')
     else:
-        list = [a for a in msg.split(' ') if a != '']
+        list = [a for a in msg.split() if a != '']
     list = replace_eastereggs(list)
     return list
 
@@ -32,8 +35,17 @@ def choose (choice_list):
 def fetchLatestUpdate ():
     return
 
+
 def task ():
-    req = requests.get("https://api.telegram.org/bot986451403:AAHwcdSHWFNj1xaVvLjboFf2n8l0Wei5Qlo/getUpdates")
+    dice_text = u'🎲'
+    telegram_api_url = "https://api.telegram.org"
+    with open('config.json') as f:
+        config = json.load(f)
+    bot_token = config["bot_token"]
+    get_updates = "getUpdates"
+    send_message = "sendMessage"
+    basic_bot_url = f"{telegram_api_url}/{bot_token}"
+    req = requests.get(f"{basic_bot_url}/{get_updates}")
     res = req.json()["result"]
     res = res[len(res)-1]
     currentUpdate = res["update_id"]
@@ -41,16 +53,18 @@ def task ():
     global latestDealtUpdate
     if currentUpdate > latestDealtUpdate:
         chatid, text = res["message"]["from"]["id"], res["message"]["text"]
+        #failt bei leerer Liste
         choicetext = choose(extract_choices(text))
         print(choicetext)
-        requests.get("https://api.telegram.org/bot986451403:AAHwcdSHWFNj1xaVvLjboFf2n8l0Wei5Qlo/sendMessage?chat_id="+str(chatid)+"&text=" + diceText)
+        #fstring refactor
+        requests.get(f"{basic_bot_url}/{send_message}?chat_id="+str(chatid)+"&text=" + dice_text)
         time.sleep(0.3)
-        requests.get("https://api.telegram.org/bot986451403:AAHwcdSHWFNj1xaVvLjboFf2n8l0Wei5Qlo/sendMessage?chat_id="+str(chatid)+"&text=" + diceText+diceText)
+        requests.get(f"{basic_bot_url}/{send_message}?chat_id="+str(chatid)+"&text=" + dice_text+dice_text)
         time.sleep(0.3)
-        requests.get("https://api.telegram.org/bot986451403:AAHwcdSHWFNj1xaVvLjboFf2n8l0Wei5Qlo/sendMessage?chat_id="+str(chatid)+"&text=" + diceText+diceText+diceText)
+        requests.get(f"{basic_bot_url}/{send_message}?chat_id="+str(chatid)+"&text=" + dice_text+dice_text+dice_text)
         time.sleep(0.3)
-        requests.get("https://api.telegram.org/bot986451403:AAHwcdSHWFNj1xaVvLjboFf2n8l0Wei5Qlo/sendMessage?chat_id="+str(chatid)+"&text=" + choicetext)
-        print("https://api.telegram.org/bot986451403:AAHwcdSHWFNj1xaVvLjboFf2n8l0Wei5Qlo/sendMessage?chat_id="+str(chatid)+"&text=" + choicetext)
+        requests.get(f"{basic_bot_url}/{send_message}?chat_id="+str(chatid)+"&text=" + choicetext)
+        print(f"{basic_bot_url}/{send_message}?chat_id="+str(chatid)+"&text=" + choicetext)
         isFirstIteration = False
         latestDealtUpdate = currentUpdate
     return
