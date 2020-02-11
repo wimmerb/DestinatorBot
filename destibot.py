@@ -7,7 +7,6 @@ import re
 from itertools import chain
 
 
-# 2tes go
 # do_category
 # sticker bei confused/beim auswählen
 # user kann query saven
@@ -73,25 +72,22 @@ helpkeyboard = Reply_Keyboard_Entity([["/help", "👎"]])
 
 
 def send_help(state):
-    state['expecting_help'] = True
-    state['expecting_go'] = False
+    state['phase'] = 'expecting_help'
     return confused
 
 
 def do_go(state, message, info):
-    expecting_go = state.get('expecting_go', False)
-    expecting_help = state.get('expecting_help', False)
-    if expecting_go and state['choices'] != []:
+    phase = state.get('phase', 'unknown')
+    if (phase == 'expecting_go' or phase == 'was_go') and state['choices'] != []:
         choice = choose(state['choices'])
-        state['expecting_go'] = False
+        state['phase'] = 'was_go'
         return Reply_Keyboard_None(), three_dices + [choice]
     else:
         return send_help(state)
 
 
 def do_abort(state, message, info):
-    state['expecting_help'] = False
-    state['expecting_go'] = False
+    state['phase'] = 'abort'
     return Reply_Keyboard_None(), ["Ok, let's try again!"]
 
 
@@ -104,19 +100,19 @@ def do_again(state, message, info):
 
 
 def do_yes(state, message, info):
-    expecting_go = state.get('expecting_go', False)
-    expecting_help = state.get('expecting_help', False)
-    if expecting_help:
-        state['expecting_help'] = True
+    phase = state.get('phase', 'unknown')
+    state['phase'] = 'yes'
+    if phase == 'expecting_help':
+        state['phase'] = 'expecting_help'
         return helpkeyboard, ["Ok, sure! Try to press this: /help"]
     else:
         return send_help(state)
 
 
 def do_no(state, message, info):
-    expecting_go = state.get('expecting_go', False)
-    expecting_help = state.get('expecting_help', False)
-    if expecting_help:
+    phase = state.get('phase', 'unknown')
+    state['phase'] = 'no'
+    if phase == 'expecting_help':
         state['expecting_help'] = False
         return Reply_Keyboard_None(), ["Ok, sure!"]
     else:
@@ -124,6 +120,7 @@ def do_no(state, message, info):
 
 
 def do_start(state, message, info):
+    state['phase'] = 'start'
     welcome = """Hey there!
 This is your destinator!
 Can I help you find your destiny today?
@@ -132,23 +129,20 @@ If you are unsure what to do, you can try /help"""
 
 
 def do_help(state, message, info):
-    state['expecting_help'] = False
-    state['expecting_go'] = False
+    state['phase'] = 'help'
     suggestions = info['suggestions']
     welcome = info['welcome']
     return Reply_Keyboard_None(), [welcome] + suggestions
 
 
 def do_query(state, message, info):
-    state['expecting_go'] = True
-    state['expecting_help'] = False
+    state['phase'] = 'expecting_go'
     state['choices'] = []
     query = info.get('query', "Ready to find your destiny?")
     choice_text = info.get('choice_text', "Give me some choices:")
     state['query'] = query
     state['choice_text'] = choice_text
-    return Reply_Keyboard_Entity([list(info.get('choices', [])),['🎲', '❌']]), [choice_text]# + [query]
-
+    return Reply_Keyboard_Entity([list(info.get('choices', [])), ['🎲', '❌']]), [choice_text]
 
 
 def do_persons(state, message, info):
@@ -173,13 +167,14 @@ def do_persons(state, message, info):
 
 def do_default(state, message):
     items = extract_choices(message)
-    expecting_go = state.get('expecting_go', False)
-    if len(items) <= 1 and not expecting_go:
+    phase = state.get('phase', 'unknown')
+    if len(items) <= 1 and phase != 'expecting_go':
         return do_query(state, message, {})
-    if expecting_go:
+    elif phase == 'expecting_go':
         state['choices'] += [message]
         return Reply_Keyboard_Ignore(), []
     state['choices'] = items
+    state['phase'] = 'was_go'
     choice = choose(items)
     return Reply_Keyboard_None(), three_dices + [choice]
 
