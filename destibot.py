@@ -7,7 +7,6 @@ import re
 from itertools import chain
 
 
-# 1 Wort -> Query mode
 # 2tes go
 # do_category
 # sticker bei confused/beim auswählen
@@ -148,8 +147,8 @@ def do_query(state, message, info):
     choice_text = info.get('choice_text', "Give me some choices:")
     state['query'] = query
     state['choice_text'] = choice_text
-    # + [query]
-    return Reply_Keyboard_Entity([list(info['choices']), ['🎲', '❌']]), [choice_text] + state['choices']
+    return Reply_Keyboard_Entity([list(info.get('choices', [])),['🎲', '❌']]), [choice_text]# + [query]
+
 
 
 def do_persons(state, message, info):
@@ -175,8 +174,10 @@ def do_persons(state, message, info):
 def do_default(state, message):
     items = extract_choices(message)
     expecting_go = state.get('expecting_go', False)
+    if len(items) <= 1 and not expecting_go:
+        return do_query(state, message, {})
     if expecting_go:
-        state['choices'] += items
+        state['choices'] += [message]
         return Reply_Keyboard_Ignore(), []
     state['choices'] = items
     choice = choose(items)
