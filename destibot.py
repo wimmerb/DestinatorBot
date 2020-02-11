@@ -4,6 +4,7 @@ import json
 import requests
 import time
 import re
+import math
 from itertools import chain
 
 
@@ -20,10 +21,45 @@ from itertools import chain
 
 class Reply_Keyboard_Entity:
     def __init__(self, x):
-        self.val = {'keyboard': x}
+        self.val = {'keyboard': self.resize(x)}
 
     def give_command(self):
         return f"&reply_markup={json.dumps(self.val)}"
+
+    def resize(self, x):
+        if len(x) != 2:
+            return x
+        l = x[0]
+        if not l:
+            return [x[1]]
+        nr = len(l)
+        if nr%3 is 0:
+            ret = self.reshape(l, 3)
+            ret.append(x[1])
+            return ret
+            #mache 3er-Chunks
+        if nr%2 is 0:
+            ret = self.reshape(l, 2)
+            ret.append(x[1])
+            return ret
+            #mache 2er-Chunks
+        if nr%3 is 1:
+            ret = self.reshape(l, 3)
+            ret[-1] += x[1]
+            return ret
+            #append x[1] ans letzte
+        if nr%3 is 2:
+            ret = self.reshape(l, 3)
+            ret.append(x[1])
+            return ret
+            #halb fertig machen
+            
+    def reshape(self, l, size):
+        ret = [[] for x in range(math.ceil(len(l)/size))]
+        for i in range(len(l)):
+            ret[math.floor(i/size)].append(l[i])
+        return ret
+
 
 
 class Reply_Keyboard_None(Reply_Keyboard_Entity):
