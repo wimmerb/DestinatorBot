@@ -8,12 +8,11 @@ from itertools import chain
 
 
 # 1 Wort -> Query mode
-# /again, 2tes go
+# 2tes go
 # do_category
 # sticker bei confused/beim auswählen
 # user kann query saven
 # number ranges
-# pattern über ganzen string matchen
 # mehr Kategorien, größere Auswahl innerhalb
 # feedback
 # resize
@@ -74,6 +73,12 @@ confused = Reply_Keyboard_Entity([["👍", "👎"]]), [
 helpkeyboard = Reply_Keyboard_Entity([["/help", "👎"]])
 
 
+def send_help(state):
+    state['expecting_help'] = True
+    state['expecting_go'] = False
+    return confused
+
+
 def do_go(state, message, info):
     expecting_go = state.get('expecting_go', False)
     expecting_help = state.get('expecting_help', False)
@@ -82,15 +87,21 @@ def do_go(state, message, info):
         state['expecting_go'] = False
         return Reply_Keyboard_None(), three_dices + [choice]
     else:
-        state['expecting_help'] = True
-        state['expecting_go'] = False
-        return confused
+        return send_help(state)
 
 
 def do_abort(state, message, info):
     state['expecting_help'] = False
     state['expecting_go'] = False
     return Reply_Keyboard_None(), ["Ok, let's try again!"]
+
+
+def do_again(state, message, info):
+    if 'choices' in state and state['choices'] != []:
+        choice = choose(state['choices'])
+        return Reply_Keyboard_None(), three_dices + [choice]
+    else:
+        return send_help(state)
 
 
 def do_yes(state, message, info):
@@ -100,9 +111,7 @@ def do_yes(state, message, info):
         state['expecting_help'] = True
         return helpkeyboard, ["Ok, sure! Try to press this: /help"]
     else:
-        state['expecting_help'] = True
-        state['expecting_go'] = False
-        return confused
+        return send_help(state)
 
 
 def do_no(state, message, info):
@@ -112,9 +121,7 @@ def do_no(state, message, info):
         state['expecting_help'] = False
         return Reply_Keyboard_None(), ["Ok, sure!"]
     else:
-        state['expecting_help'] = True
-        state['expecting_go'] = False
-        return confused
+        return send_help(state)
 
 
 def do_start(state, message, info):
@@ -171,6 +178,7 @@ def do_default(state, message):
     if expecting_go:
         state['choices'] += items
         return Reply_Keyboard_Ignore(), []
+    state['choices'] = items
     choice = choose(items)
     return Reply_Keyboard_None(), three_dices + [choice]
 
@@ -183,7 +191,8 @@ modes_to_functions = {
     "persons": do_persons,
     "query": do_query,
     "go": do_go,
-    "abort": do_abort
+    "abort": do_abort,
+    "again": do_again
 }
 
 

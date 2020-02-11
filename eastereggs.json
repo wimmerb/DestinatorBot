@@ -65,6 +65,13 @@
         ],
         "mode": "go"
     },
+    "again": {
+        "patterns": [
+            "/again",
+            "again"
+        ],
+        "mode": "again"
+    },
     "abort": {
         "patterns": [
             "/abort",
