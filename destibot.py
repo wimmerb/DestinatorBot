@@ -203,7 +203,7 @@ def process_message(message, chatid):
             flags |= re.IGNORECASE
         for pattern in patterns:
             # checke alle Patterns nach match
-            if re.match(pattern, message, flags):
+            if re.fullmatch(pattern, message, flags):
                 # handler für gematchtes Pattern raussuchen
                 handler = modes_to_functions[info['mode']]
                 # state: gespeichert zu chatid, enthält 'expecting_go', 'expecting_help', 'choices'
