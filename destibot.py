@@ -133,7 +133,7 @@ def do_query(state, message, info):
     choice_text = info.get('choice_text', "Give me some choices:")
     state['query'] = query
     state['choice_text'] = choice_text
-    return Reply_Keyboard_Entity([list(info['choices']),['🎲', '❌']]), [choice_text] + state['choices']# + [query]
+    return Reply_Keyboard_Entity([list(info.get('choices', [])),['🎲', '❌']]), [choice_text]# + [query]
 
 
 def do_persons(state, message, info):
@@ -159,8 +159,10 @@ def do_persons(state, message, info):
 def do_default(state, message):
     items = extract_choices(message)
     expecting_go = state.get('expecting_go', False)
+    if len(items) <= 1 and not expecting_go:
+        return do_query(state, message, {})
     if expecting_go:
-        state['choices'] += items
+        state['choices'] += [message]
         return Reply_Keyboard_Ignore(), []
     choice = choose(items)
     return Reply_Keyboard_None(), three_dices + [choice]
