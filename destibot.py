@@ -7,35 +7,41 @@ import re
 from itertools import chain
 
 
-
-
-#1 Wort -> Query mode
-#/again, 2tes go
-#do_category
-#sticker bei confused/beim auswählen
-#user kann query saven
-#number ranges
-#pattern über ganzen string matchen
-#mehr Kategorien, größere Auswahl innerhalb
-#feedback
-#resize
+# 1 Wort -> Query mode
+# /again, 2tes go
+# do_category
+# sticker bei confused/beim auswählen
+# user kann query saven
+# number ranges
+# pattern über ganzen string matchen
+# mehr Kategorien, größere Auswahl innerhalb
+# feedback
+# resize
 
 class Reply_Keyboard_Entity:
     def __init__(self, x):
         self.val = {'keyboard': x}
+
     def give_command(self):
         return f"&reply_markup={json.dumps(self.val)}"
+
+
 class Reply_Keyboard_None(Reply_Keyboard_Entity):
     def __init__(self):
         self.val = None
+
     def give_command(self):
         remove_keyboard = {"remove_keyboard": True}
         return f"&reply_markup={json.dumps(remove_keyboard)}"
+
+
 class Reply_Keyboard_Ignore(Reply_Keyboard_Entity):
     def __init__(self):
         self.val = None
+
     def give_command(self):
         return f""
+
 
 latest_update_served = 0
 with open("eastereggs.json") as f:
@@ -63,7 +69,8 @@ def extract_choices(msg):
 
 three_dices = [u'🎲', u'🎲🎲', u'🎲🎲🎲', "Bow to your destiny!"]
 
-confused = Reply_Keyboard_Entity([["👍", "👎"]]), ["I'm not sure what you are saying 🤔 Can you use some /help?"]
+confused = Reply_Keyboard_Entity([["👍", "👎"]]), [
+    "I'm not sure what you are saying 🤔 Can you use some /help?"]
 helpkeyboard = Reply_Keyboard_Entity([["/help", "👎"]])
 
 
@@ -79,10 +86,12 @@ def do_go(state, message, info):
         state['expecting_go'] = False
         return confused
 
+
 def do_abort(state, message, info):
     state['expecting_help'] = False
     state['expecting_go'] = False
     return Reply_Keyboard_None(), ["Ok, let's try again!"]
+
 
 def do_yes(state, message, info):
     expecting_go = state.get('expecting_go', False)
@@ -108,7 +117,6 @@ def do_no(state, message, info):
         return confused
 
 
-
 def do_start(state, message, info):
     welcome = """Hey there!
 This is your destinator!
@@ -122,7 +130,7 @@ def do_help(state, message, info):
     state['expecting_go'] = False
     suggestions = info['suggestions']
     welcome = info['welcome']
-    return Reply_Keyboard_None() , [welcome] + suggestions
+    return Reply_Keyboard_None(), [welcome] + suggestions
 
 
 def do_query(state, message, info):
@@ -133,13 +141,14 @@ def do_query(state, message, info):
     choice_text = info.get('choice_text', "Give me some choices:")
     state['query'] = query
     state['choice_text'] = choice_text
-    return Reply_Keyboard_Entity([list(info['choices']),['🎲', '❌']]), [choice_text] + state['choices']# + [query]
+    # + [query]
+    return Reply_Keyboard_Entity([list(info['choices']), ['🎲', '❌']]), [choice_text] + state['choices']
 
 
 def do_persons(state, message, info):
-    #do default
+    # do default
     return do_default(state, message)
-    #hidden code
+    # hidden code
     """
     items = extract_choices(message)
     patterns = info['patterns']
@@ -180,33 +189,30 @@ modes_to_functions = {
 
 def process_message(message, chatid):
     global states
-    #found "bug": wenn man einfach nur einmal ohne Kontext "jo" eingibt -> er landet bei do_yes
+    # found "bug": wenn man einfach nur einmal ohne Kontext "jo" eingibt -> er landet bei do_yes
     if chatid not in states:
         states[chatid] = {}
     state = states[chatid]
     for name, info in modes.items():
         patterns = info["patterns"]
-        ignore_case = info.get("ignore_case", True) #findet noch keine Verwendung
+        # findet noch keine Verwendung
+        ignore_case = info.get("ignore_case", True)
         flags = 0
         if ignore_case:
-            #(mehrere) Flags setzen mit bitwise or
+            # (mehrere) Flags setzen mit bitwise or
             flags |= re.IGNORECASE
         for pattern in patterns:
-            #checke alle Patterns nach match
+            # checke alle Patterns nach match
             if re.match(pattern, message, flags):
-                #handler für gematchtes Pattern raussuchen
+                # handler für gematchtes Pattern raussuchen
                 handler = modes_to_functions[info['mode']]
-                #state: gespeichert zu chatid, enthält 'expecting_go', 'expecting_help', 'choices'
-                #message: gesendeter Text
-                #info: patterns, mode, choices
+                # state: gespeichert zu chatid, enthält 'expecting_go', 'expecting_help', 'choices'
+                # message: gesendeter Text
+                # info: patterns, mode, choices
                 response = handler(state, message, info)
                 return response
     response = do_default(state, message)
     return response
-
-
-def fetchLatestUpdate():
-    return
 
 
 def handle_update(update, basic_bot_url):
@@ -215,7 +221,7 @@ def handle_update(update, basic_bot_url):
         # Not sure what to do here
         return
     chatid = update["message"]["from"]["id"]
-    #möglich: mehr als nur Textnachrichten handlen z.B. Kette von Sticker-Nachrichten als Eingabe
+    # möglich: mehr als nur Textnachrichten handlen z.B. Kette von Sticker-Nachrichten als Eingabe
     if "text" not in update["message"]:
         keyboard, responses = confused
     else:
@@ -225,8 +231,9 @@ def handle_update(update, basic_bot_url):
         reply_keyboard_markup = keyboard.give_command()
         response = responses[i]
         requests.get(
-                     f"{basic_bot_url}/{send_message}?chat_id={chatid}&text={response}{reply_keyboard_markup}")
-        print(f"{basic_bot_url}/{send_message}?chat_id={chatid}&text={response}{reply_keyboard_markup}")
+            f"{basic_bot_url}/{send_message}?chat_id={chatid}&text={response}{reply_keyboard_markup}")
+        print(
+            f"{basic_bot_url}/{send_message}?chat_id={chatid}&text={response}{reply_keyboard_markup}")
         if i < (len(responses) - 1):
             time.sleep(0.3)
 
@@ -255,9 +262,3 @@ if __name__ == "__main__":
     while True:
         task()
         time.sleep(0.3)
-
-
-
-
-
-
