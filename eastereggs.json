@@ -3,7 +3,7 @@
         "patterns": [
             "residenz"
         ],
-        "mode": "persons",
+        "mode": "query",
         "choices": [
             "Nils",
             "Niklas",
@@ -14,7 +14,7 @@
         "patterns": [
             "collector"
         ],
-        "mode": "persons",
+        "mode": "query",
         "choices": [
             "Maxi",
             "Jakob",
@@ -26,7 +26,7 @@
         "patterns": [
             "hw25"
         ],
-        "mode": "persons",
+        "mode": "query",
         "choices": [
             "Simon",
             "Fabi",
@@ -58,24 +58,31 @@
             "🍕"
         ]
     },
+    "go": {
+        "patterns": [
+            "/go",
+            "🎲"
+        ],
+        "mode": "go"
+    },
+    "abort": {
+        "patterns": [
+            "/abort",
+            "❌"
+        ],
+        "mode": "abort"
+    },
     "yes": {
         "patterns": [
-            "ja",
-            "yes",
-            "Y",
-            "jop?",
-            "yo",
-            "goo*",
-            "yea?h?",
-            "yup",
-            "sure"
+            "/yes",
+            "👍"
         ],
         "mode": "yes"
     },
     "no": {
         "patterns": [
-            "no",
-            "nö"
+            "/no",
+            "👎"
         ],
         "mode": "no"
     },
