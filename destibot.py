@@ -9,7 +9,6 @@ from functools import reduce
 from itertools import chain
 
 
-
 # sticker bei confused/beim auswählen
 # user kann query saven
 # number ranges
@@ -112,6 +111,7 @@ suggest_help = Reply_Keyboard(
     "Ok, sure! Try to press this: /help", [["/help", "👎"]])
 default_suggestions = [[u'/default_game', u'/categories', u'/help']]
 
+
 def send_choice(choice):
     return destiny + [Reply(choice)]
 
@@ -190,9 +190,10 @@ def do_help(state, message, info):
 
 
 def do_query(state, message, info, init_choices=[]):
-    state['phase'] = 'expecting_go'
     state['choices'] = []
+
     choice_text = f"{'Game started: s' if init_choices==[] else 'S'}end me some messages with choices (text or buttons):"
+    state['phase'] = 'expecting_go'
     state['choice_text'] = choice_text
     keyboard = Reply_Keyboard(
         choice_text, [list(info.get('choices', [])), ['🎲', '❌']])
@@ -223,15 +224,18 @@ def do_persons(state, message, info):
 def do_default(state, message):
     items = extract_choices(message)
     phase = state.get('phase', 'unknown')
-    if len(items) <= 1 and phase != 'expecting_go':
-        return do_query(state, message, {}, init_choices=items)
-    elif phase == 'expecting_go':
+    if phase == 'expecting_go':
         state['choices'] += [message]
         return []
+    elif phase == 'proposed_save':
+        return save_list(state, message)
+    elif len(items) <= 1:
+        return do_query(state, message, {}, init_choices=items)
     state['choices'] = items
     state['phase'] = 'was_go'
     choice = choose(items)
     return send_choice(choice)
+
 
 def do_category(state, message, info):
     categories = []
@@ -239,7 +243,41 @@ def do_category(state, message, info):
         if info.get('mode', '') == 'query':
             categories.append(name)
     return [Reply_Keyboard(
-                          "Here's a list of possible categories to choose from...", [categories])]
+        "Here's a list of possible categories to choose from...", [categories])]
+
+
+def propose_save(state):
+    state['phase'] = "proposed_save"
+    msg = "Saving current list... Propose a name:"
+    suggestions = [[u'❌', u'/help']]
+    return [Reply_Keyboard(msg, suggestions)]
+
+
+def save_list(state, name):
+    suggestions = default_suggestions
+    if 'choices' not in state or state['choices'] == []:
+        msg = "You proposed a save, but I do not remember anything you said..."
+        state['phase'] = 'save_failed'
+    else:
+        if 'lists' not in state:
+            state['lists'] = {}
+        save_name = name.split()[0].lstrip('/')
+        # Should we protect against overwriting?
+        state['lists'][save_name] = state['choices']
+        state['phase'] = 'saved_list'
+        msg = f"Saved list! Find it with /{save_name}"
+    return [Reply_Keyboard(msg, suggestions)]
+
+
+def do_save(state, message, info):
+    match = re.match("/save (.*)", message)
+    if match == None:
+        # no name for list given, so ask for one
+        return propose_save(state)
+    else:
+        arg = match.groups()[0]
+        return save_list(state, arg)
+
 
 modes_to_functions = {
     "yes": do_yes,
@@ -252,7 +290,8 @@ modes_to_functions = {
     "go": do_go,
     "abort": do_abort,
     "again": do_again,
-    "categories": do_category
+    "categories": do_category,
+    "save": do_save
 }
 
 
@@ -264,7 +303,6 @@ def process_message(message, chatid):
     state = states[chatid]
     for name, info in modes.items():
         patterns = info["patterns"]
-        # findet noch keine Verwendung
         ignore_case = info.get("ignore_case", True)
         flags = 0
         if ignore_case:
@@ -272,7 +310,7 @@ def process_message(message, chatid):
             flags |= re.IGNORECASE
         for pattern in patterns:
             # checke alle Patterns nach match
-            if re.fullmatch(pattern, message, flags):
+            if re.match(pattern, message, flags):
                 # handler für gematchtes Pattern raussuchen
                 handler = modes_to_functions[info['mode']]
                 # state: gespeichert zu chatid, enthält 'expecting_go', 'expecting_help', 'choices'
@@ -282,6 +320,13 @@ def process_message(message, chatid):
                 print(f"Message: {message}")
                 print(f"Phase: {state.get('phase', 'NULLPHASE')}\n")
                 return response
+    # No specific mode was identified, so check if any custom list was asked for
+    if 'lists' in state and message.startswith('/'):
+        msg = message.strip().lstrip('/')
+        for name, choices in state['lists'].items():
+            if name == msg:
+                info = {'choices': choices}
+                return do_query(state, message, info, [])
     response = do_default(state, message)
     print(f"Message: {message}")
     print(f"Phase: {state.get('phase', 'NULLPHASE')}\n")
@@ -332,7 +377,6 @@ if __name__ == "__main__":
     while True:
         task()
         time.sleep(0.3)
-
 
 
 
