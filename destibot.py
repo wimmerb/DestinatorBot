@@ -5,6 +5,7 @@ import requests
 import time
 import re
 import math
+from functools import reduce
 from itertools import chain
 
 
@@ -101,7 +102,7 @@ def extract_choices(msg):
     return l
 
 
-three_dices = [u'🎲', u'🎲🎲', u'🎲🎲🎲']
+three_dices = ["hmm...."]#u'🤔🤔🤔']
 destiny = [Reply(x) for x in three_dices] + \
     [Reply_Keyboard("Bow to your destiny!", [["🙇", "🔄"]])]
 
@@ -109,7 +110,7 @@ confused = Reply_Keyboard(
     "I'm not sure what you are saying 🤔 Can you use some /help?", [["👍", "👎"]])
 suggest_help = Reply_Keyboard(
     "Ok, sure! Try to press this: /help", [["/help", "👎"]])
-default_suggestions = [[u'🎲', u'/categories', u'/help']]
+default_suggestions = [[u'/default_game', u'/categories', u'/help']]
 
 def send_choice(choice):
     return destiny + [Reply(choice)]
@@ -122,10 +123,14 @@ def send_help(state):
 
 def do_go(state, message, info):
     phase = state.get('phase', 'unknown')
-    if (phase == 'expecting_go') and state['choices'] != []:
-        choice = choose(state['choices'])
-        state['phase'] = 'was_go'
-        return send_choice(choice)
+    if (phase == 'expecting_go'):
+        if state['choices'] != []:
+            choice = choose(state['choices'])
+            state['phase'] = 'was_go'
+            return send_choice(choice)
+        else:
+            state['phase'] = 'expecting_help'
+            return [confused]
     else:
         print(str(info))
         return do_query(state, message, info)
@@ -175,7 +180,11 @@ def do_start(state, message, info):
 
 def do_help(state, message, info):
     state['phase'] = 'default'
-    suggestions = [Reply(x) for x in info['suggestions']]
+    tmpstring = ''
+    for x in info['suggestions']:
+        tmpstring += "\n"+x
+    tmpstring = reduce(lambda x,y: x+'\n'+y, info['suggestions'], '')
+    suggestions = [Reply(tmpstring)]
     welcome = Reply_Keyboard(info['welcome'], [info['suggestions']])
     return [welcome] + suggestions
 
@@ -183,7 +192,7 @@ def do_help(state, message, info):
 def do_query(state, message, info, init_choices=[]):
     state['phase'] = 'expecting_go'
     state['choices'] = []
-    choice_text = f"{'Game started: g' if init_choices==[] else 'G'}ive me some choices (text or buttons):"
+    choice_text = f"{'Game started: s' if init_choices==[] else 'S'}end me some messages with choices (text or buttons):"
     state['choice_text'] = choice_text
     keyboard = Reply_Keyboard(
         choice_text, [list(info.get('choices', [])), ['🎲', '❌']])
@@ -327,4 +336,3 @@ if __name__ == "__main__":
 
 
 
-l = u'👶🏻👶🏼👶🏾👦🏻👦🏼👦🏾👧🏻👧🏼👧🏾👨🏻👨🏼👨🏾👩🏻👩🏼👩🏾👱🏻‍♀️👱🏾‍♀️👱🏻👱🏾👴🏻👴🏾👵🏻👵🏾'

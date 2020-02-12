@@ -120,10 +120,16 @@
             "👵🏾"
         ]
     },
+    "/default_game": {
+        "patterns": {
+        },
+        "mode": "query"
+    },
     "go": {
         "patterns": [
             "/go",
-            "🎲"
+            "🎲",
+            "/default_game"
         ],
         "mode": "go"
     },
@@ -158,10 +164,7 @@
     },
     "start": {
         "patterns": [
-            "/start",
-            "hi+!?",
-            "he+y+!?",
-            "yo!"
+            "/start"
         ],
         "mode": "start",
         "welcome": "Hey there! \nThis is your destinator! \nCan I help you find your destiny today? \nJust feed me with some suggestions and I will pick for you! \n\nIf you are unsure what to do, you can try /help"
@@ -173,11 +176,8 @@
         "mode": "help",
         "suggestions": [
             "1,2,3,4",
-            "🍺 🍷",
-            "/food",
-            "Was sollen wir trinken?",
             "/categories",
-            "🎲"
+            "/default_game"
         ],
         "welcome": "🎲\t Start a game or make me pick a choice in-game\n❌\t Dismiss\n🙇\t Bow\n🔄\t Repeat game\n\nTry sending me one of these:"
     }
