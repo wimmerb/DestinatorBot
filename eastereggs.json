@@ -1,7 +1,7 @@
 {
     "residenz": {
         "patterns": [
-            "residenz"
+            "/?residenz"
         ],
         "mode": "query",
         "choices": [
@@ -12,7 +12,7 @@
     },
     "collector": {
         "patterns": [
-            "collector"
+            "/?collector"
         ],
         "mode": "query",
         "choices": [
@@ -24,7 +24,7 @@
     },
     "hw25": {
         "patterns": [
-            "hw25"
+            "/?hw25"
         ],
         "mode": "query",
         "choices": [
@@ -49,8 +49,7 @@
     },
     "food": {
         "patterns": [
-            "food",
-            "/food"
+            "/?food"
         ],
         "mode": "query",
         "choices": [
@@ -66,7 +65,8 @@
     "activity": {
         "patterns": [
             "/?action",
-            "/?activity"],
+            "/?activity"
+        ],
         "mode": "query",
         "choices": [
             "🛏",
@@ -86,8 +86,7 @@
     },
     "again": {
         "patterns": [
-            "/again",
-            "again",
+            "/?again",
             "🔄"
         ],
         "mode": "again"
@@ -117,8 +116,9 @@
     "start": {
         "patterns": [
             "/start",
-            "hi",
-            "hey"
+            "hi+!?",
+            "he+y+!?",
+            "yo!"
         ],
         "mode": "start"
     },
