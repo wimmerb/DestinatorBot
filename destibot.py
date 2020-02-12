@@ -8,23 +8,29 @@ import math
 from itertools import chain
 
 
-
-# /again, 2tes go
 # do_category
 # sticker bei confused/beim auswählen
 # user kann query saven
 # number ranges
-# pattern über ganzen string matchen
 # mehr Kategorien, größere Auswahl innerhalb
 # feedback
-# resize
+# Immer außerhalb von Query oder help: Buttons für Go, Category, Help bereithalten
 
-class Reply_Keyboard_Entity:
-    def __init__(self, x):
+class Reply:
+    def __init__(self, text):
+        self.text = text
+    
+    def give_command(self):
+        return ""
+
+class Reply_Keyboard(Reply):
+    def __init__(self, text, x):
+        self.text = text
         self.val = {'keyboard': self.resize(x)}
-
+    
     def give_command(self):
         return f"&reply_markup={json.dumps(self.val)}"
+
 
     def resize(self, x):
         if len(x) != 2:
@@ -62,21 +68,13 @@ class Reply_Keyboard_Entity:
 
 
 
-class Reply_Keyboard_None(Reply_Keyboard_Entity):
-    def __init__(self):
-        self.val = None
+class Remove_Keyboard(Reply_Keyboard):
+    def __init__(self, text):
+        self.text = text
 
     def give_command(self):
         remove_keyboard = {"remove_keyboard": True}
         return f"&reply_markup={json.dumps(remove_keyboard)}"
-
-
-class Reply_Keyboard_Ignore(Reply_Keyboard_Entity):
-    def __init__(self):
-        self.val = None
-
-    def give_command(self):
-        return f""
 
 
 latest_update_served = 0
@@ -103,82 +101,91 @@ def extract_choices(msg):
     return l
 
 
-three_dices = [u'🎲', u'🎲🎲', u'🎲🎲🎲', "Bow to your destiny!"]
+three_dices = [u'🎲', u'🎲🎲', u'🎲🎲🎲']
+destiny = [Reply(x) for x in three_dices] + \
+    [Reply("Bow to your destiny!")]
 
-confused = Reply_Keyboard_Entity([["👍", "👎"]]), [
-    "I'm not sure what you are saying 🤔 Can you use some /help?"]
-helpkeyboard = Reply_Keyboard_Entity([["/help", "👎"]])
+confused = Reply_Keyboard(
+    "I'm not sure what you are saying 🤔 Can you use some /help?", [["👍", "👎"]])
+suggest_help = Reply_Keyboard(
+    "Ok, sure! Try to press this: /help", [["/help", "👎"]])
+
+
+def send_help(state):
+    state['phase'] = 'expecting_help'
+    return [confused]
 
 
 def do_go(state, message, info):
-    expecting_go = state.get('expecting_go', False)
-    expecting_help = state.get('expecting_help', False)
-    if expecting_go and state['choices'] != []:
+    phase = state.get('phase', 'unknown')
+    if (phase == 'expecting_go' or phase == 'was_go') and state['choices'] != []:
         choice = choose(state['choices'])
-        state['expecting_go'] = False
-        return Reply_Keyboard_None(), three_dices + [choice]
+        state['phase'] = 'was_go'
+        return destiny + [Reply_Keyboard(choice, [["🙇", "🔄"]])]
     else:
-        state['expecting_help'] = True
-        state['expecting_go'] = False
-        return confused
+        return send_help(state)
 
 
 def do_abort(state, message, info):
-    state['expecting_help'] = False
-    state['expecting_go'] = False
-    return Reply_Keyboard_None(), ["Ok, let's try again!"]
+    phase = state.get('phase', 'unknown')
+    state['phase'] = 'abort'
+    if phase == 'was_go':
+        return [Remove_Keyboard("What's up next?")]
+    return [Remove_Keyboard("Ok, let's try again!")]
+
+
+def do_again(state, message, info):
+    if 'choices' in state and state['choices'] != []:
+        choice = choose(state['choices'])
+        return destiny + [Reply_Keyboard(choice, [["🙇", "🔄"]])]
+    else:
+        return send_help(state)
 
 
 def do_yes(state, message, info):
-    expecting_go = state.get('expecting_go', False)
-    expecting_help = state.get('expecting_help', False)
-    if expecting_help:
-        state['expecting_help'] = True
-        return helpkeyboard, ["Ok, sure! Try to press this: /help"]
+    phase = state.get('phase', 'unknown')
+    state['phase'] = 'yes'
+    if phase == 'expecting_help':
+        state['phase'] = 'expecting_help'
+        return [suggest_help]
     else:
-        state['expecting_help'] = True
-        state['expecting_go'] = False
-        return confused
+        return send_help(state)
 
 
 def do_no(state, message, info):
-    expecting_go = state.get('expecting_go', False)
-    expecting_help = state.get('expecting_help', False)
-    if expecting_help:
+    phase = state.get('phase', 'unknown')
+    state['phase'] = 'no'
+    if phase == 'expecting_help':
         state['expecting_help'] = False
-        return Reply_Keyboard_None(), ["Ok, sure!"]
+        return [Remove_Keyboard("Ok, sure!")]
     else:
-        state['expecting_help'] = True
-        state['expecting_go'] = False
-        return confused
+        return send_help(state)
 
 
 def do_start(state, message, info):
+    state['phase'] = 'start'
     welcome = """Hey there!
 This is your destinator!
 Can I help you find your destiny today?
 If you are unsure what to do, you can try /help"""
-    return Reply_Keyboard_None(), [welcome]
+    return Remove_Keyboard(welcome)
 
 
 def do_help(state, message, info):
-    state['expecting_help'] = False
-    state['expecting_go'] = False
-    suggestions = info['suggestions']
-    welcome = info['welcome']
-    return Reply_Keyboard_None(), [welcome] + suggestions
+    state['phase'] = 'help'
+    suggestions = [Reply(x) for x in info['suggestions']]
+    welcome = Remove_Keyboard(info['welcome'])
+    return [welcome] + suggestions
 
 
 def do_query(state, message, info):
-    state['expecting_go'] = True
-    state['expecting_help'] = False
+    state['phase'] = 'expecting_go'
     state['choices'] = []
     query = info.get('query', "Ready to find your destiny?")
     choice_text = info.get('choice_text', "Give me some choices:")
     state['query'] = query
     state['choice_text'] = choice_text
-    return Reply_Keyboard_Entity([list(info.get('choices', [])),['🎲', '❌']]), [choice_text]# + [query]
-
+    return [Reply_Keyboard(choice_text, [list(info.get('choices', [])), ['🎲', '❌']])]
 
 
 def do_persons(state, message, info):
@@ -203,14 +210,16 @@ def do_persons(state, message, info):
 
 def do_default(state, message):
     items = extract_choices(message)
-    expecting_go = state.get('expecting_go', False)
-    if len(items) <= 1 and not expecting_go:
+    phase = state.get('phase', 'unknown')
+    if len(items) <= 1 and phase != 'expecting_go':
         return do_query(state, message, {})
-    if expecting_go:
+    elif phase == 'expecting_go':
         state['choices'] += [message]
-        return Reply_Keyboard_Ignore(), []
+        return []
+    state['choices'] = items
+    state['phase'] = 'was_go'
     choice = choose(items)
-    return Reply_Keyboard_None(), three_dices + [choice]
+    return destiny + [Reply_Keyboard(choice, [["🙇", "🔄"]])]
 
 
 modes_to_functions = {
@@ -221,7 +230,8 @@ modes_to_functions = {
     "persons": do_persons,
     "query": do_query,
     "go": do_go,
-    "abort": do_abort
+    "abort": do_abort,
+    "again": do_again
 }
 
 
@@ -255,23 +265,23 @@ def process_message(message, chatid):
 
 def handle_update(update, basic_bot_url):
     send_message = "sendMessage"
-    if "message" not in update or "from" not in update["message"]:
+    if "message" not in update or "from" not in update["message"] or "text" not in update["message"]:
         # Not sure what to do here
         return
     chatid = update["message"]["from"]["id"]
     # möglich: mehr als nur Textnachrichten handlen z.B. Kette von Sticker-Nachrichten als Eingabe
     if "text" not in update["message"]:
-        keyboard, responses = confused
+        responses = confused
     else:
         text = update["message"]["text"]
-        keyboard, responses = process_message(text, chatid)
-    for i in range(len(responses)):
-        reply_keyboard_markup = keyboard.give_command()
-        response = responses[i]
+        responses = process_message(text, chatid)
+        time.sleep(0.3)
+    for i, response in enumerate(responses):
+        reply_keyboard_markup = response.give_command()
         requests.get(
-            f"{basic_bot_url}/{send_message}?chat_id={chatid}&text={response}{reply_keyboard_markup}")
+            f"{basic_bot_url}/{send_message}?chat_id={chatid}&text={response.text}{reply_keyboard_markup}")
         print(
-            f"{basic_bot_url}/{send_message}?chat_id={chatid}&text={response}{reply_keyboard_markup}")
+            f"{basic_bot_url}/{send_message}?chat_id={chatid}&text={response.text}{reply_keyboard_markup}")
         if i < (len(responses) - 1):
             time.sleep(0.3)
 

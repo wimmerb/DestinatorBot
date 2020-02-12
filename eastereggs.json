@@ -55,7 +55,26 @@
         "mode": "query",
         "choices": [
             "🍣",
-            "🍕"
+            "🍕",
+            "🍦",
+            "🌯",
+            "🥗",
+            "🍳",
+            "🍔"
+        ]
+    },
+    "activity": {
+        "patterns": [
+            "/?action",
+            "/?activity"],
+        "mode": "query",
+        "choices": [
+            "🛏",
+            "⚽️",
+            "🏸",
+            "🍺",
+            "🍽",
+            "🏖"
         ]
     },
     "go": {
@@ -65,10 +84,19 @@
         ],
         "mode": "go"
     },
+    "again": {
+        "patterns": [
+            "/again",
+            "again",
+            "🔄"
+        ],
+        "mode": "again"
+    },
     "abort": {
         "patterns": [
             "/abort",
-            "❌"
+            "❌",
+            "🙇"
         ],
         "mode": "abort"
     },
