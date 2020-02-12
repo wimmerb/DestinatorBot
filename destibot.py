@@ -171,7 +171,7 @@ def do_start(state, message, info):
 This is your destinator!
 Can I help you find your destiny today?
 If you are unsure what to do, you can try /help"""
-    return Remove_Keyboard(welcome)
+    return [Remove_Keyboard(welcome)]
 
 
 def do_help(state, message, info):
@@ -181,14 +181,17 @@ def do_help(state, message, info):
     return [welcome] + suggestions
 
 
-def do_query(state, message, info):
+def do_query(state, message, info, init_choices=[]):
     state['phase'] = 'expecting_go'
     state['choices'] = []
     query = info.get('query', "Ready to find your destiny?")
     choice_text = info.get('choice_text', "Give me some choices:")
     state['query'] = query
     state['choice_text'] = choice_text
-    return [Reply_Keyboard(choice_text, [list(info.get('choices', [])), ['🎲', '❌']])]
+    keyboard = Reply_Keyboard(
+        choice_text, [list(info.get('choices', [])), ['🎲', '❌']])
+    initial_choices = list(map(Reply, init_choices))
+    return [keyboard] + initial_choices
 
 
 def do_persons(state, message, info):
@@ -215,7 +218,7 @@ def do_default(state, message):
     items = extract_choices(message)
     phase = state.get('phase', 'unknown')
     if len(items) <= 1 and phase != 'expecting_go':
-        return do_query(state, message, {})
+        return do_query(state, message, {}, init_choices=items)
     elif phase == 'expecting_go':
         state['choices'] += [message]
         return []
