@@ -8,7 +8,6 @@ import math
 from itertools import chain
 
 
-
 # sticker bei confused/beim auswählen
 # user kann query saven
 # number ranges
@@ -111,6 +110,7 @@ suggest_help = Reply_Keyboard(
     "Ok, sure! Try to press this: /help", [["/help", "👎"]])
 default_suggestions = [[u'🎲', u'/categories', u'/help']]
 
+
 def send_choice(choice):
     return destiny + [Reply(choice)]
 
@@ -183,7 +183,7 @@ def do_help(state, message, info):
 def do_query(state, message, info, init_choices=[]):
     state['phase'] = 'expecting_go'
     state['choices'] = []
-    choice_text = f"{'Game started: g' if init_choices==[] else 'G'}ive me some choices (text or buttons):"
+    choice_text = f"{'Game started. ' if init_choices==[] else ''}Give me some choices (text or buttons):"
     state['choice_text'] = choice_text
     keyboard = Reply_Keyboard(
         choice_text, [list(info.get('choices', [])), ['🎲', '❌']])
@@ -224,13 +224,15 @@ def do_default(state, message):
     choice = choose(items)
     return send_choice(choice)
 
+
 def do_category(state, message, info):
     categories = []
     for name, info in modes.items():
         if info.get('mode', '') == 'query':
             categories.append(name)
     return [Reply_Keyboard(
-                          "Here's a list of possible categories to choose from...", [categories])]
+        "Here's a list of possible categories to choose from...", [categories])]
+
 
 modes_to_functions = {
     "yes": do_yes,
@@ -323,8 +325,6 @@ if __name__ == "__main__":
     while True:
         task()
         time.sleep(0.3)
-
-
 
 
 l = u'👶🏻👶🏼👶🏾👦🏻👦🏼👦🏾👧🏻👧🏼👧🏾👨🏻👨🏼👨🏾👩🏻👩🏼👩🏾👱🏻‍♀️👱🏾‍♀️👱🏻👱🏾👴🏻👴🏾👵🏻👵🏾'
