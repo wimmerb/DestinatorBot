@@ -1,4 +1,11 @@
 {
+    "save": {
+        "patterns": [
+            "/save( .*)?"
+        ],
+        "ignore_case": false,
+        "mode": "save"
+    },
     "categories:": {
         "patterns": [
             "/?categories",
