@@ -1,9 +1,17 @@
 {
+    "categories:": {
+        "patterns": [
+            "/?categories",
+            "/?men[uü]",
+            "/?katalog"
+        ],
+        "mode": "categories"
+    },
     "residenz": {
         "patterns": [
             "/?residenz"
         ],
-        "mode": "query",
+        "mode": "easteregg_query",
         "choices": [
             "Nils",
             "Niklas",
@@ -14,7 +22,7 @@
         "patterns": [
             "/?collector"
         ],
-        "mode": "query",
+        "mode": "easteregg_query",
         "choices": [
             "Maxi",
             "Jakob",
@@ -26,7 +34,7 @@
         "patterns": [
             "/?hw25"
         ],
-        "mode": "query",
+        "mode": "easteregg_query",
         "choices": [
             "Simon",
             "Fabi",
@@ -34,7 +42,7 @@
             "Bene"
         ]
     },
-    "drinks": {
+    "/drinks": {
         "patterns": [
             "Was\\s([sw]ollen\\swir\\s)?trinken\\??",
             "Trinken",
@@ -47,9 +55,9 @@
             "Weißbier"
         ]
     },
-    "food": {
+    "/food": {
         "patterns": [
-            "/?food"
+            "/food"
         ],
         "mode": "query",
         "choices": [
@@ -62,10 +70,10 @@
             "🍔"
         ]
     },
-    "activity": {
+    "/activity": {
         "patterns": [
-            "/?action",
-            "/?activity"
+            "/action",
+            "/activity"
         ],
         "mode": "query",
         "choices": [
@@ -75,6 +83,41 @@
             "🍺",
             "🍽",
             "🏖"
+        ]
+    },
+    "/family": {
+        "patterns": [
+            "/humans",
+            "/people",
+            "/family",
+            "/menschen",
+            "/familie"
+        ],
+        "mode": "query",
+        "choices": [
+            "👶🏻",
+            "👶🏼",
+            "👶🏾",
+            "👦🏻",
+            "👦🏼",
+            "👦🏾",
+            "👧🏻",
+            "👧🏼",
+            "👧🏾",
+            "👨🏻",
+            "👨🏼",
+            "👨🏾",
+            "👩🏻",
+            "👩🏼",
+            "👩🏾",
+            "👱🏻‍♀️",
+            "👱🏾‍♀️",
+            "👱🏻",
+            "👱🏾",
+            "👴🏻",
+            "👴🏾",
+            "👵🏻",
+            "👵🏾"
         ]
     },
     "go": {
@@ -120,7 +163,8 @@
             "he+y+!?",
             "yo!"
         ],
-        "mode": "start"
+        "mode": "start",
+        "welcome": "Hey there! \nThis is your destinator! \nCan I help you find your destiny today? \nJust feed me with some suggestions and I will pick for you! \n\nIf you are unsure what to do, you can try /help"
     },
     "help": {
         "patterns": [
@@ -131,8 +175,10 @@
             "1,2,3,4",
             "🍺 🍷",
             "/food",
-            "Was sollen wir trinken?"
+            "Was sollen wir trinken?",
+            "/categories",
+            "🎲"
         ],
-        "welcome": "Try one of these:"
+        "welcome": "🎲\t Start a game or make me pick a choice in-game\n❌\t Dismiss\n🙇\t Bow\n🔄\t Repeat game\n\nTry sending me one of these:"
     }
 }

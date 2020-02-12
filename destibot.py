@@ -8,13 +8,14 @@ import math
 from itertools import chain
 
 
-# do_category
+
 # sticker bei confused/beim auswählen
 # user kann query saven
 # number ranges
 # mehr Kategorien, größere Auswahl innerhalb
 # feedback
 # Immer außerhalb von Query oder help: Buttons für Go, Category, Help bereithalten
+# persönliche Eingaben speichern
 
 class Reply:
     def __init__(self, text):
@@ -33,8 +34,8 @@ class Reply_Keyboard(Reply):
         return f"&reply_markup={json.dumps(self.val)}"
 
     def resize(self, x):
-        if len(x) != 2:
-            return x
+        if len(x) != 2 and len(x) > 0:
+            return self.reshape(x[0], 3)
         l = x[0]
         if not l:
             return [x[1]]
@@ -108,7 +109,7 @@ confused = Reply_Keyboard(
     "I'm not sure what you are saying 🤔 Can you use some /help?", [["👍", "👎"]])
 suggest_help = Reply_Keyboard(
     "Ok, sure! Try to press this: /help", [["/help", "👎"]])
-
+default_suggestions = [[u'🎲', u'/categories', u'/help']]
 
 def send_choice(choice):
     return destiny + [Reply(choice)]
@@ -121,24 +122,25 @@ def send_help(state):
 
 def do_go(state, message, info):
     phase = state.get('phase', 'unknown')
-    if (phase == 'expecting_go' or phase == 'was_go') and state['choices'] != []:
+    if (phase == 'expecting_go') and state['choices'] != []:
         choice = choose(state['choices'])
         state['phase'] = 'was_go'
         return send_choice(choice)
     else:
-        return send_help(state)
+        print(str(info))
+        return do_query(state, message, info)
 
 
 def do_abort(state, message, info):
     phase = state.get('phase', 'unknown')
-    state['phase'] = 'abort'
+    state['phase'] = 'default'
     if phase == 'was_go':
-        return [Remove_Keyboard("What's up next?")]
-    return [Remove_Keyboard("Ok, let's try again!")]
+        return [Reply_Keyboard("What's up next?", default_suggestions)]
+    return [Reply_Keyboard("Ok, let's try again!", default_suggestions)]
 
 
 def do_again(state, message, info):
-    if 'choices' in state and state['choices'] != []:
+    if 'choices' in state and state['choices'] != [] and 'phase' in state and state['phase'] == 'was_go':
         choice = choose(state['choices'])
         return send_choice(choice)
     else:
@@ -159,34 +161,29 @@ def do_no(state, message, info):
     phase = state.get('phase', 'unknown')
     state['phase'] = 'no'
     if phase == 'expecting_help':
-        state['expecting_help'] = False
-        return [Remove_Keyboard("Ok, sure!")]
+        state['phase'] = 'default'
+        return [Reply_Keyboard("Ok, sure!", default_suggestions)]
     else:
         return send_help(state)
 
 
 def do_start(state, message, info):
-    state['phase'] = 'start'
-    welcome = """Hey there!
-This is your destinator!
-Can I help you find your destiny today?
-If you are unsure what to do, you can try /help"""
-    return [Remove_Keyboard(welcome)]
+    state['phase'] = 'default'
+    welcome = info['welcome']
+    return [Reply_Keyboard(welcome, default_suggestions)]
 
 
 def do_help(state, message, info):
-    state['phase'] = 'help'
+    state['phase'] = 'default'
     suggestions = [Reply(x) for x in info['suggestions']]
-    welcome = Remove_Keyboard(info['welcome'])
+    welcome = Reply_Keyboard(info['welcome'], [info['suggestions']])
     return [welcome] + suggestions
 
 
 def do_query(state, message, info, init_choices=[]):
     state['phase'] = 'expecting_go'
     state['choices'] = []
-    query = info.get('query', "Ready to find your destiny?")
-    choice_text = info.get('choice_text', "Give me some choices:")
-    state['query'] = query
+    choice_text = f"{'Game started: g' if init_choices==[] else 'G'}ive me some choices (text or buttons):"
     state['choice_text'] = choice_text
     keyboard = Reply_Keyboard(
         choice_text, [list(info.get('choices', [])), ['🎲', '❌']])
@@ -227,6 +224,13 @@ def do_default(state, message):
     choice = choose(items)
     return send_choice(choice)
 
+def do_category(state, message, info):
+    categories = []
+    for name, info in modes.items():
+        if info.get('mode', '') == 'query':
+            categories.append(name)
+    return [Reply_Keyboard(
+                          "Here's a list of possible categories to choose from...", [categories])]
 
 modes_to_functions = {
     "yes": do_yes,
@@ -235,9 +239,11 @@ modes_to_functions = {
     "help": do_help,
     "persons": do_persons,
     "query": do_query,
+    "easteregg_query": do_query,
     "go": do_go,
     "abort": do_abort,
-    "again": do_again
+    "again": do_again,
+    "categories": do_category
 }
 
 
@@ -264,8 +270,12 @@ def process_message(message, chatid):
                 # message: gesendeter Text
                 # info: patterns, mode, choices
                 response = handler(state, message, info)
+                print(f"Message: {message}")
+                print(f"Phase: {state.get('phase', 'NULLPHASE')}\n")
                 return response
     response = do_default(state, message)
+    print(f"Message: {message}")
+    print(f"Phase: {state.get('phase', 'NULLPHASE')}\n")
     return response
 
 
@@ -286,8 +296,6 @@ def handle_update(update, basic_bot_url):
         reply_keyboard_markup = response.give_command()
         requests.get(
             f"{basic_bot_url}/{send_message}?chat_id={chatid}&text={response.text}{reply_keyboard_markup}")
-        print(
-            f"{basic_bot_url}/{send_message}?chat_id={chatid}&text={response.text}{reply_keyboard_markup}")
         if i < (len(responses) - 1):
             time.sleep(0.3)
 
@@ -299,7 +307,6 @@ def task():
     get_updates = "getUpdates"
     basic_bot_url = f"{telegram_api_url}/bot{bot_token}"
     update_request_url = f"{basic_bot_url}/{get_updates}?offset={latest_update_served+1}"
-    print(update_request_url)
     req = requests.get(update_request_url)
     res = req.json()
     if res["ok"] != True:
@@ -316,3 +323,8 @@ if __name__ == "__main__":
     while True:
         task()
         time.sleep(0.3)
+
+
+
+
+l = u'👶🏻👶🏼👶🏾👦🏻👦🏼👦🏾👧🏻👧🏼👧🏾👨🏻👨🏼👨🏾👩🏻👩🏼👩🏾👱🏻‍♀️👱🏾‍♀️👱🏻👱🏾👴🏻👴🏾👵🏻👵🏾'
