@@ -19,18 +19,18 @@ from itertools import chain
 class Reply:
     def __init__(self, text):
         self.text = text
-    
+
     def give_command(self):
         return ""
+
 
 class Reply_Keyboard(Reply):
     def __init__(self, text, x):
         self.text = text
         self.val = {'keyboard': self.resize(x)}
-    
+
     def give_command(self):
         return f"&reply_markup={json.dumps(self.val)}"
-
 
     def resize(self, x):
         if len(x) != 2:
@@ -39,33 +39,32 @@ class Reply_Keyboard(Reply):
         if not l:
             return [x[1]]
         nr = len(l)
-        if nr%3 is 0:
+        if nr % 3 is 0:
             ret = self.reshape(l, 3)
             ret.append(x[1])
             return ret
-            #mache 3er-Chunks
-        if nr%2 is 0:
+            # mache 3er-Chunks
+        if nr % 2 is 0:
             ret = self.reshape(l, 2)
             ret.append(x[1])
             return ret
-            #mache 2er-Chunks
-        if nr%3 is 1:
+            # mache 2er-Chunks
+        if nr % 3 is 1:
             ret = self.reshape(l, 3)
             ret[-1] += x[1]
             return ret
-            #append x[1] ans letzte
-        if nr%3 is 2:
+            # append x[1] ans letzte
+        if nr % 3 is 2:
             ret = self.reshape(l, 3)
             ret.append(x[1])
             return ret
-            #halb fertig machen
-            
+            # halb fertig machen
+
     def reshape(self, l, size):
         ret = [[] for x in range(math.ceil(len(l)/size))]
         for i in range(len(l)):
             ret[math.floor(i/size)].append(l[i])
         return ret
-
 
 
 class Remove_Keyboard(Reply_Keyboard):
@@ -103,12 +102,16 @@ def extract_choices(msg):
 
 three_dices = [u'🎲', u'🎲🎲', u'🎲🎲🎲']
 destiny = [Reply(x) for x in three_dices] + \
-    [Reply("Bow to your destiny!")]
+    [Reply_Keyboard("Bow to your destiny!", [["🙇", "🔄"]])]
 
 confused = Reply_Keyboard(
     "I'm not sure what you are saying 🤔 Can you use some /help?", [["👍", "👎"]])
 suggest_help = Reply_Keyboard(
     "Ok, sure! Try to press this: /help", [["/help", "👎"]])
+
+
+def send_choice(choice):
+    return destiny + [Reply(choice)]
 
 
 def send_help(state):
@@ -121,7 +124,7 @@ def do_go(state, message, info):
     if (phase == 'expecting_go' or phase == 'was_go') and state['choices'] != []:
         choice = choose(state['choices'])
         state['phase'] = 'was_go'
-        return destiny + [Reply_Keyboard(choice, [["🙇", "🔄"]])]
+        return send_choice(choice)
     else:
         return send_help(state)
 
@@ -137,7 +140,7 @@ def do_abort(state, message, info):
 def do_again(state, message, info):
     if 'choices' in state and state['choices'] != []:
         choice = choose(state['choices'])
-        return destiny + [Reply_Keyboard(choice, [["🙇", "🔄"]])]
+        return send_choice(choice)
     else:
         return send_help(state)
 
@@ -219,7 +222,7 @@ def do_default(state, message):
     state['choices'] = items
     state['phase'] = 'was_go'
     choice = choose(items)
-    return destiny + [Reply_Keyboard(choice, [["🙇", "🔄"]])]
+    return send_choice(choice)
 
 
 modes_to_functions = {
