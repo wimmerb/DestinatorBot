@@ -139,9 +139,13 @@
             "👵🏾"
         ]
     },
-    "/default_game": {
-        "patterns": {},
-        "mode": "query"
+    "default_game": {
+        "patterns": [
+            "(start )?new game!?",
+            "/default_game",
+            "/new"
+        ],
+        "mode": "default_game"
     },
     "go": {
         "patterns": [
@@ -149,8 +153,7 @@
             "start!?",
             "find (my )?destiny!?",
             "/go",
-            "🎲",
-            "/default_game"
+            "🎲"
         ],
         "mode": "go"
     },
@@ -188,7 +191,7 @@
             "/start"
         ],
         "mode": "start",
-        "welcome": "Hey there! \nThis is your destinator! \nCan I help you find your destiny today? \nJust feed me with some suggestions and I will pick for you! \n\nIf you are unsure what to do, you can try /help"
+        "welcome": "Hey there!\nThis is your destinator!\nCan I help you find your destiny today?\nIf you are unsure what to do, you can try /help"
     },
     "help": {
         "patterns": [
@@ -196,10 +199,29 @@
         ],
         "mode": "help",
         "suggestions": [
-            "1,2,3,4",
+            "Start new game!",
             "/categories",
-            "/default_game"
+            "/promode Start and stop pro mode"
         ],
         "welcome": "🎲\t Find your destiny!\n❌\t Dismiss\n🙇\t Bow\n🔄\t Repeat game\n\nTry sending me one of these:"
+    },
+    "promode": {
+        "patterns": [
+            "/promode"
+        ],
+        "mode": "promode",
+        "suggestions": [
+            "1,2,3,4",
+            "/save",
+            "/mylists"
+        ],
+        "welcome": "Started pro mode! Here are some additional things you can try:",
+        "goodbye": "Stopping pro mode!"
+    },
+    "mylists": {
+        "patterns": [
+            "/mylists"
+        ],
+        "mode": "showlists"
     }
 }

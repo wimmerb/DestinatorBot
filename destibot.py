@@ -20,6 +20,11 @@ from urllib3.exceptions import HTTPError
 # Immer außerhalb von Query oder help: Buttons für Go, Category, Help bereithalten
 # persönliche Eingaben speichern
 
+# Modes
+STANDARD = 0
+PRO = 1
+
+
 class Reply:
     def __init__(self, text):
         self.text = text
@@ -112,7 +117,7 @@ confused = Reply_Keyboard(
     "I'm not sure what you are saying 🤔 Can you use some /help?", [["👍", "👎"]])
 suggest_help = Reply_Keyboard(
     "Ok, sure! Try to press this: /help", [["/help", "👎"]])
-default_suggestions = [[u'/default_game', u'/categories', u'/help']]
+default_suggestions = [[u'Start new game!', u'/categories', u'/help']]
 
 
 def send_choice(choice):
@@ -136,7 +141,7 @@ def do_go(state, message, info):
             return [confused]
     else:
         print(str(info))
-        return do_query(state, message, info)
+        return do_query(state, message, info, has_buttons=False)
 
 
 def do_abort(state, message, info):
@@ -161,6 +166,8 @@ def do_yes(state, message, info):
     if phase == 'expecting_help':
         state['phase'] = 'expecting_help'
         return [suggest_help]
+    elif phase == 'proposed_game':
+        return do_query(state, message, info, init_choices=state['choices'], has_buttons=False)
     else:
         return send_help(state)
 
@@ -168,7 +175,7 @@ def do_yes(state, message, info):
 def do_no(state, message, info):
     phase = state.get('phase', 'unknown')
     state['phase'] = 'no'
-    if phase == 'expecting_help':
+    if phase == 'expecting_help' or phase == 'proposed_game':
         state['phase'] = 'default'
         return [Reply_Keyboard("Ok, sure!", default_suggestions)]
     else:
@@ -189,10 +196,20 @@ def do_help(state, message, info):
     return [welcome] + suggestions
 
 
-def do_query(state, message, info, init_choices=[]):
-    state['choices'] = []
+def propose_game(state, message, info):
+    state['choices'] = [message]
+    state['phase'] = 'proposed_game'
+    proposal = f"Start a new game with this item: '{message}'?"
+    keyboard = Reply_Keyboard(
+        proposal, [["👍", "👎", "/help"]])
+    return [keyboard]
 
-    choice_text = f"{'Game started: s' if init_choices==[] else 'S'}end me some messages with choices (text or buttons):"
+
+def do_query(state, message, info, init_choices=None, has_buttons=True):
+    init_choices = init_choices if init_choices else []
+    state['choices'] = init_choices
+
+    choice_text = f"Send me some {'' if init_choices == [] else 'more '}choices{' (text or buttons)' if has_buttons else ''}:"
     state['phase'] = 'expecting_go'
     state['choice_text'] = choice_text
     keyboard = Reply_Keyboard(
@@ -221,6 +238,10 @@ def do_persons(state, message, info):
     return three_dices + [choice]"""
 
 
+def do_default_game(state, message, info):
+    return do_query(state, message, {}, has_buttons=False)
+
+
 def do_default(state, message):
     items = extract_choices(message)
     phase = state.get('phase', 'unknown')
@@ -229,8 +250,8 @@ def do_default(state, message):
         return []
     elif phase == 'proposed_save':
         return save_list(state, message)
-    elif len(items) <= 1:
-        return do_query(state, message, {}, init_choices=items)
+    elif len(items) <= 1 or state['mode'] < PRO:
+        return propose_game(state, message, {})
     state['choices'] = items
     state['phase'] = 'was_go'
     choice = choose(items)
@@ -242,8 +263,10 @@ def do_category(state, message, info):
     for name, info in modes.items():
         if info.get('mode', '') == 'query':
             categories.append(name)
+    if state['mode'] >= PRO and 'lists' in state and state['lists']:
+        categories.append('/mylists')
     return [Reply_Keyboard(
-        "Here's a list of possible categories to choose from...", [categories])]
+        "Here's a list of possible categories to choose from...", [categories + [u'❌']])]
 
 
 def propose_save(state):
@@ -279,6 +302,26 @@ def do_save(state, message, info):
         return save_list(state, arg)
 
 
+def do_show_lists(state, message, info):
+    if 'lists' not in state or state['lists'] == []:
+        msg = "You do not have any lists! Try /save to create one."
+    else:
+        msg = "Your lists:\n" + "\n".join('/' + s for s in state['lists'])
+    return [Reply_Keyboard(msg, default_suggestions)]
+
+
+def do_promode(state, message, info):
+    state['phase'] = 'default'
+    if state['mode'] == PRO:
+        state['mode'] = STANDARD
+        return [Reply_Keyboard(info['goodbye'], default_suggestions)]
+    state['mode'] = PRO
+    suggestion_text = '\n'.join(info['suggestions'])
+    suggestions = [Reply(suggestion_text)]
+    welcome = Reply_Keyboard(info['welcome'], [info['suggestions']])
+    return [welcome] + suggestions
+
+
 modes_to_functions = {
     "yes": do_yes,
     "no": do_no,
@@ -291,7 +334,10 @@ modes_to_functions = {
     "abort": do_abort,
     "again": do_again,
     "categories": do_category,
-    "save": do_save
+    "save": do_save,
+    "default_game": do_default_game,
+    'promode': do_promode,
+    'showlists': do_show_lists
 }
 
 
@@ -299,7 +345,9 @@ def process_message(message, chatid):
     global states
     # found "bug": wenn man einfach nur einmal ohne Kontext "jo" eingibt -> er landet bei do_yes
     if chatid not in states:
-        states[chatid] = {}
+        state = {}
+        state['mode'] = STANDARD
+        states[chatid] = state
     state = states[chatid]
     for name, info in modes.items():
         patterns = info["patterns"]
@@ -375,6 +423,7 @@ def task():
 
 if __name__ == "__main__":
     logging.basicConfig(filename='destibot.log', level=logging.INFO)
+    logging.getLogger().addHandler(logging.StreamHandler())
     while True:
         try:
             task()
