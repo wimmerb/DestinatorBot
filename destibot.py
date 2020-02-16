@@ -183,11 +183,8 @@ def do_start(state, message, info):
 
 def do_help(state, message, info):
     state['phase'] = 'default'
-    tmpstring = ''
-    for x in info['suggestions']:
-        tmpstring += "\n"+x
-    tmpstring = reduce(lambda x, y: x+'\n'+y, info['suggestions'], '')
-    suggestions = [Reply(tmpstring)]
+    suggestion_text = '\n'.join(info['suggestions'])
+    suggestions = [Reply(suggestion_text)]
     welcome = Reply_Keyboard(info['welcome'], [info['suggestions']])
     return [welcome] + suggestions
 
