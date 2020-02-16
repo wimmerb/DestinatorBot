@@ -201,7 +201,7 @@
         "suggestions": [
             "Start new game!",
             "/categories",
-            "/promode Start and stop pro mode"
+            "/promode"
         ],
         "welcome": "🎲\t Find your destiny!\n❌\t Dismiss\n🙇\t Bow\n🔄\t Repeat game\n\nTry sending me one of these:"
     },
