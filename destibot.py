@@ -322,6 +322,18 @@ def do_promode(state, message, info):
     return [welcome] + suggestions
 
 
+def do_number_range(state, message, info):
+    suggestions = default_suggestions
+    regex = "(-?[0-9]+)[-:](-?[0-9]+)$"
+    match = re.match(regex, message)
+    a, b = match.groups()
+    r = list(range(int(a), int(b) + 1))
+    if r == []:
+        return [Reply_Keyboard('You gave me nothing to choose from. Do you need /help?', [["/help", "👎"]])]
+    choice = str(choose(r))
+    return send_choice(choice)
+
+
 modes_to_functions = {
     "yes": do_yes,
     "no": do_no,
@@ -336,8 +348,9 @@ modes_to_functions = {
     "categories": do_category,
     "save": do_save,
     "default_game": do_default_game,
-    'promode': do_promode,
-    'showlists': do_show_lists
+    "promode": do_promode,
+    "showlists": do_show_lists,
+    "number_range": do_number_range
 }
 
 
