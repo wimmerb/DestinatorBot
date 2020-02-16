@@ -145,6 +145,9 @@
     },
     "go": {
         "patterns": [
+            "go+!?",
+            "start!?",
+            "find (my )?destiny!?",
             "/go",
             "🎲",
             "/default_game"
@@ -197,6 +200,6 @@
             "/categories",
             "/default_game"
         ],
-        "welcome": "🎲\t Start a game or make me pick a choice in-game\n❌\t Dismiss\n🙇\t Bow\n🔄\t Repeat game\n\nTry sending me one of these:"
+        "welcome": "🎲\t Find your destiny!\n❌\t Dismiss\n🙇\t Bow\n🔄\t Repeat game\n\nTry sending me one of these:"
     }
 }
