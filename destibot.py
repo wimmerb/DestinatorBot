@@ -5,8 +5,11 @@ import requests
 import time
 import re
 import math
+import logging
+import sys
 from functools import reduce
 from itertools import chain
+from urllib3.exceptions import HTTPError
 
 
 # sticker bei confused/beim auswählen
@@ -101,7 +104,7 @@ def extract_choices(msg):
     return l
 
 
-three_dices = ["hmm...."]#u'🤔🤔🤔']
+three_dices = ["hmm...."]  # u'🤔🤔🤔']
 destiny = [Reply(x) for x in three_dices] + \
     [Reply_Keyboard("Bow to your destiny!", [["🙇", "🔄"]])]
 
@@ -183,7 +186,7 @@ def do_help(state, message, info):
     tmpstring = ''
     for x in info['suggestions']:
         tmpstring += "\n"+x
-    tmpstring = reduce(lambda x,y: x+'\n'+y, info['suggestions'], '')
+    tmpstring = reduce(lambda x, y: x+'\n'+y, info['suggestions'], '')
     suggestions = [Reply(tmpstring)]
     welcome = Reply_Keyboard(info['welcome'], [info['suggestions']])
     return [welcome] + suggestions
@@ -374,9 +377,15 @@ def task():
 
 
 if __name__ == "__main__":
+    logging.basicConfig(filename='destibot.log', level=logging.INFO)
     while True:
-        task()
-        time.sleep(0.3)
-
-
-
+        try:
+            task()
+            time.sleep(0.3)
+        except HTTPError:
+            logging.exception("Network error!")
+        except KeyboardInterrupt:
+            logging.exception("Keyboard interrupt. Shutting down!")
+            sys.exit(0)
+        except Exception:
+            logging.exception("Unknown error!")
