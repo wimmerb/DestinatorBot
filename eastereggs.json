@@ -203,7 +203,7 @@
             "/categories",
             "/promode"
         ],
-        "welcome": "🎲\t Find your destiny!\n❌\t Dismiss\n🙇\t Bow\n🔄\t Repeat game\n\nTry sending me one of these:"
+        "welcome": "🎲 or /go:\t Find your destiny!\n❌\t Dismiss\n🙇\t Bow\n🔄\t Repeat game\n\nTry sending me one of these:"
     },
     "promode": {
         "patterns": [
