@@ -1,0 +1,70 @@
+[
+    {
+        "width": 512,
+        "height": 512,
+        "emoji": "\ud83e\udd14",
+        "set_name": "MonkeyMix",
+        "is_animated": true,
+        "thumb": {
+            "file_id": "AAMCAgADGQEAAhAAAV5Ka4PhQe76Pp9ZwYm5Nc2YxCKYAAKfAAMw1J0Rx94BErn6pedpNJsPAAQBAAdtAAMHMgACGAQ",
+            "file_unique_id": "AQADaTSbDwAEBzIAAg",
+            "file_size": 4582,
+            "width": 128,
+            "height": 128
+        },
+        "file_id": "CAACAgIAAxkBAAIQAAFeSmuD4UHu-j6fWcGJuTXNmMQimAACnwADMNSdEcfeARK5-qXnGAQ",
+        "file_unique_id": "AgADnwADMNSdEQ",
+        "file_size": 9318
+    },
+    {
+        "width": 512,
+        "height": 512,
+        "emoji": "\ud83e\udd14",
+        "set_name": "Mesozoic",
+        "is_animated": false,
+        "thumb": {
+            "file_id": "AAMCAgADGQEAAhAoXkpu5KlkhdyETsoiNrZUBMpIBLoAAoAAAxAhAhDGZHm9GhcoFcIXEA4ABAEAB20AA6kEAAIYBA",
+            "file_unique_id": "AQADwhcQDgAEqQQAAg",
+            "file_size": 6654,
+            "width": 128,
+            "height": 128
+        },
+        "file_id": "CAACAgIAAxkBAAIQKF5KbuSpZIXchE7KIja2VATKSAS6AAKAAAMQIQIQxmR5vRoXKBUYBA",
+        "file_unique_id": "AgADgAADECECEA",
+        "file_size": 41970
+    },
+    {
+        "width": 512,
+        "height": 512,
+        "emoji": "\ud83e\udd14",
+        "set_name": "Skull",
+        "is_animated": true,
+        "thumb": {
+            "file_id": "AAMCAgADGQEAAhApXkpu9blBKv6f8fTTr4t2-sWLxo0AAiwAAw220hn6lPv6A5mU_DjLyw4ABAEAB20AA3RDAAIYBA",
+            "file_unique_id": "AQADOMvLDgAEdEMAAg",
+            "file_size": 3960,
+            "width": 128,
+            "height": 128
+        },
+        "file_id": "CAACAgIAAxkBAAIQKV5KbvW5QSr-n_H006-LdvrFi8aNAAIsAAMNttIZ-pT7-gOZlPwYBA",
+        "file_unique_id": "AgADLAADDbbSGQ",
+        "file_size": 9623
+    },
+    {
+        "width": 512,
+        "height": 512,
+        "emoji": "\ud83e\udd14",
+        "set_name": "ResistanceDog",
+        "is_animated": true,
+        "thumb": {
+            "file_id": "AAMCAgADGQEAAhAqXkpvIzsZdk0jgTdWb6-g5oxZQeUAAuMAA1advQoP-CLMraYLN1KfuQ8ABAEAB20AA-82AAIYBA",
+            "file_unique_id": "AQADUp-5DwAE7zYAAg",
+            "file_size": 4580,
+            "width": 128,
+            "height": 128
+        },
+        "file_id": "CAACAgIAAxkBAAIQKl5KbyM7GXZNI4E3Vm-voOaMWUHlAALjAANWnb0KD_gizK2mCzcYBA",
+        "file_unique_id": "AgAD4wADVp29Cg",
+        "file_size": 8189
+    }
+]

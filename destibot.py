@@ -26,17 +26,59 @@ PRO = 1
 
 
 class Reply:
-    def __init__(self, text):
-        self.text = text
+
+    send_message = None
 
     def give_command(self):
         return ""
 
+    def get_http_reply(self, basic_bot_url, chatid):
+        command = self.give_command()
+        payload = self.give_payload()
+        return f"{basic_bot_url}/{self.send_message}?chat_id={chatid}{payload}{command}"
+
+
+class Text_Reply(Reply):
+
+    send_message = "sendMessage"
+
+    def __init__(self, text):
+        self.text = text
+
+    def give_payload(self):
+        return f"&text={self.text}"
+
+
+class Sticker_Reply(Reply):
+
+    send_message = "sendSticker"
+
+    def __init__(self, sticker_id):
+        self.sticker_id = sticker_id
+
+    def give_payload(self):
+        return f"&sticker={self.sticker_id}"
+
+
+class Random_Sticker_Reply(Sticker_Reply):
+
+    with open("stickers.json") as f:
+        sticker_db = json.load(f)
+
+    def __init__(self, emoji):
+        self.emoji = emoji
+
+    def give_payload(self):
+        stickers = [
+            sticker for sticker in self.sticker_db if sticker['emoji'] == self.emoji]
+        self.sticker = random.choice(stickers)
+        self.sticker_id = self.sticker['file_id']
+        return super().give_payload()
+
 
 class Reply_Keyboard(Reply):
-    def __init__(self, text, x):
-        self.text = text
-        self.val = {'keyboard': self.resize(x)}
+    def __init__(self, keyboard):
+        self.val = {'keyboard': self.resize(keyboard)}
 
     def give_command(self):
         return f"&reply_markup={json.dumps(self.val)}"
@@ -76,13 +118,27 @@ class Reply_Keyboard(Reply):
         return ret
 
 
-class Remove_Keyboard(Reply_Keyboard):
-    def __init__(self, text):
-        self.text = text
+class Remove_Keyboard(Reply):
 
     def give_command(self):
         remove_keyboard = {"remove_keyboard": True}
         return f"&reply_markup={json.dumps(remove_keyboard)}"
+
+
+class Text_Reply_Keyboard(Text_Reply, Reply_Keyboard):
+    def __init__(self, text, keyboard):
+        self.text = text
+        self.val = {'keyboard': self.resize(keyboard)}
+
+
+class Text_Remove_Keyboard(Text_Reply, Remove_Keyboard):
+    pass
+
+
+class Random_Sticker_Reply_Keyboard(Random_Sticker_Reply, Reply_Keyboard):
+    def __init__(self, emoji, keyboard):
+        Random_Sticker_Reply.__init__(self, emoji)
+        Reply_Keyboard.__init__(self, keyboard)
 
 
 latest_update_served = 0
@@ -109,19 +165,20 @@ def extract_choices(msg):
     return l
 
 
-three_dices = ["hmm...."]  # u'🤔🤔🤔']
-destiny = [Reply(x) for x in three_dices] + \
-    [Reply_Keyboard("Bow to your destiny!", [["🙇", "🔄"]])]
+three_dices = u'🤔🤔🤔'
+thinking = Random_Sticker_Reply(u'🤔')
+destiny = [thinking] + \
+    [Text_Reply_Keyboard("Bow to your destiny!", [["🙇", "🔄"]])]
 
-confused = Reply_Keyboard(
+confused = Text_Reply_Keyboard(
     "I'm not sure what you are saying 🤔 Can you use some /help?", [["👍", "👎"]])
-suggest_help = Reply_Keyboard(
+suggest_help = Text_Reply_Keyboard(
     "Ok, sure! Try to press this: /help", [["/help", "👎"]])
 default_suggestions = [[u'Start new game!', u'/categories', u'/help']]
 
 
 def send_choice(choice):
-    return destiny + [Reply(choice)]
+    return destiny + [Text_Reply(choice)]
 
 
 def send_help(state):
@@ -148,8 +205,8 @@ def do_abort(state, message, info):
     phase = state.get('phase', 'unknown')
     state['phase'] = 'default'
     if phase == 'was_go':
-        return [Reply_Keyboard("What's up next?", default_suggestions)]
-    return [Reply_Keyboard("Ok, let's try again!", default_suggestions)]
+        return [Text_Reply_Keyboard("What's up next?", default_suggestions)]
+    return [Text_Reply_Keyboard("Ok, let's try again!", default_suggestions)]
 
 
 def do_again(state, message, info):
@@ -177,7 +234,7 @@ def do_no(state, message, info):
     state['phase'] = 'no'
     if phase == 'expecting_help' or phase == 'proposed_game':
         state['phase'] = 'default'
-        return [Reply_Keyboard("Ok, sure!", default_suggestions)]
+        return [Text_Reply_Keyboard("Ok, sure!", default_suggestions)]
     else:
         return send_help(state)
 
@@ -185,14 +242,14 @@ def do_no(state, message, info):
 def do_start(state, message, info):
     state['phase'] = 'default'
     welcome = info['welcome']
-    return [Reply_Keyboard(welcome, default_suggestions)]
+    return [Text_Reply_Keyboard(welcome, default_suggestions)]
 
 
 def do_help(state, message, info):
     state['phase'] = 'default'
     suggestion_text = '\n'.join(info['suggestions'])
-    suggestions = [Reply(suggestion_text)]
-    welcome = Reply_Keyboard(info['welcome'], [info['suggestions']])
+    suggestions = [Text_Reply(suggestion_text)]
+    welcome = Text_Reply_Keyboard(info['welcome'], [info['suggestions']])
     return [welcome] + suggestions
 
 
@@ -200,7 +257,7 @@ def propose_game(state, message, info):
     state['choices'] = [message]
     state['phase'] = 'proposed_game'
     proposal = f"Start a new game with this item: '{message}'?"
-    keyboard = Reply_Keyboard(
+    keyboard = Text_Reply_Keyboard(
         proposal, [["👍", "👎", "/help"]])
     return [keyboard]
 
@@ -212,9 +269,9 @@ def do_query(state, message, info, init_choices=None, has_buttons=True):
     choice_text = f"Send me some {'' if init_choices == [] else 'more '}choices{' (text or buttons)' if has_buttons else ''}:"
     state['phase'] = 'expecting_go'
     state['choice_text'] = choice_text
-    keyboard = Reply_Keyboard(
+    keyboard = Text_Reply_Keyboard(
         choice_text, [list(info.get('choices', [])), ['🎲', '❌']])
-    initial_choices = list(map(Reply, init_choices))
+    initial_choices = list(map(Text_Reply, init_choices))
     return [keyboard] + initial_choices
 
 
@@ -265,7 +322,7 @@ def do_category(state, message, info):
             categories.append(name)
     if state['mode'] >= PRO and 'lists' in state and state['lists']:
         categories.append('/mylists')
-    return [Reply_Keyboard(
+    return [Text_Reply_Keyboard(
         "Here's a list of possible categories to choose from...", [categories + [u'❌']])]
 
 
@@ -273,7 +330,7 @@ def propose_save(state):
     state['phase'] = "proposed_save"
     msg = "Saving current list... Propose a name:"
     suggestions = [[u'❌', u'/help']]
-    return [Reply_Keyboard(msg, suggestions)]
+    return [Text_Reply_Keyboard(msg, suggestions)]
 
 
 def save_list(state, name):
@@ -289,7 +346,7 @@ def save_list(state, name):
         state['lists'][save_name] = state['choices']
         state['phase'] = 'saved_list'
         msg = f"Saved list! Find it with /{save_name}"
-    return [Reply_Keyboard(msg, suggestions)]
+    return [Text_Reply_Keyboard(msg, suggestions)]
 
 
 def do_save(state, message, info):
@@ -307,18 +364,18 @@ def do_show_lists(state, message, info):
         msg = "You do not have any lists! Try /save to create one."
     else:
         msg = "Your lists:\n" + "\n".join('/' + s for s in state['lists'])
-    return [Reply_Keyboard(msg, default_suggestions)]
+    return [Text_Reply_Keyboard(msg, default_suggestions)]
 
 
 def do_promode(state, message, info):
     state['phase'] = 'default'
     if state['mode'] == PRO:
         state['mode'] = STANDARD
-        return [Reply_Keyboard(info['goodbye'], default_suggestions)]
+        return [Text_Reply_Keyboard(info['goodbye'], default_suggestions)]
     state['mode'] = PRO
     suggestion_text = '\n'.join(info['suggestions'])
-    suggestions = [Reply(suggestion_text)]
-    welcome = Reply_Keyboard(info['welcome'], [info['suggestions']])
+    suggestions = [Text_Reply(suggestion_text)]
+    welcome = Text_Reply_Keyboard(info['welcome'], [info['suggestions']])
     return [welcome] + suggestions
 
 
@@ -329,7 +386,7 @@ def do_number_range(state, message, info):
     a, b = match.groups()
     r = list(range(int(a), int(b) + 1))
     if r == []:
-        return [Reply_Keyboard('You gave me nothing to choose from. Do you need /help?', [["/help", "👎"]])]
+        return [Text_Reply_Keyboard('You gave me nothing to choose from. Do you need /help?', [["/help", "👎"]])]
     choice = str(choose(r))
     return send_choice(choice)
 
@@ -394,23 +451,27 @@ def process_message(message, chatid):
     return response
 
 
+def process_sticker(sticker, chatid):
+    print(json.dumps(sticker))
+    return []
+
+
 def handle_update(update, basic_bot_url):
     send_message = "sendMessage"
-    if "message" not in update or "from" not in update["message"] or "text" not in update["message"]:
+    if "message" not in update or "from" not in update["message"]:
         # Not sure what to do here
         return
     chatid = update["message"]["from"]["id"]
-    # möglich: mehr als nur Textnachrichten handlen z.B. Kette von Sticker-Nachrichten als Eingabe
-    if "text" not in update["message"]:
-        responses = confused
-    else:
+    if "text" in update["message"]:
         text = update["message"]["text"]
         responses = process_message(text, chatid)
-        time.sleep(0.3)
+    elif "sticker" in update["message"]:
+        sticker = update["message"]["sticker"]
+        responses = process_sticker(sticker, chatid)
+    else:
+        responses = confused
     for i, response in enumerate(responses):
-        reply_keyboard_markup = response.give_command()
-        requests.get(
-            f"{basic_bot_url}/{send_message}?chat_id={chatid}&text={response.text}{reply_keyboard_markup}")
+        requests.get(response.get_http_reply(basic_bot_url, chatid))
         if i < (len(responses) - 1):
             time.sleep(0.3)
 
