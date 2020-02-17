@@ -268,6 +268,8 @@ def do_number_range(state, message, info):
     r = list(range(int(a), int(b) + 1))
     if r == []:
         return [Text_Reply_Keyboard('You gave me nothing to choose from. Do you need /help?', [["/help", "👎"]])]
+    state['phase'] = 'was_go'
+    state['choices'] = list(map(str, r))
     choice = str(choose(r))
     return send_choice(choice)
 
