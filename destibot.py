@@ -342,7 +342,7 @@ def handle_update(update, basic_bot_url):
     if "message" not in update or "from" not in update["message"]:
         # Not sure what to do here
         return
-    chatid = update["message"]["from"]["id"]
+    chatid = str(update["message"]["from"]["id"])
     if "text" in update["message"]:
         text = update["message"]["text"]
         responses = process_message(text, chatid)
@@ -379,14 +379,21 @@ def task():
 if __name__ == "__main__":
     logging.basicConfig(filename='destibot.log', level=logging.INFO)
     logging.getLogger().addHandler(logging.StreamHandler())
-    while True:
-        try:
-            task()
-            time.sleep(0.3)
-        except HTTPError:
-            logging.exception("Network error!")
-        except KeyboardInterrupt:
-            logging.exception("Keyboard interrupt. Shutting down!")
-            sys.exit(0)
-        except Exception:
-            logging.exception("Unknown error!")
+    with open('db.json', 'r') as f:
+        states = json.load(f)
+    try:
+        while True:
+            try:
+                task()
+                time.sleep(0.3)
+            except HTTPError:
+                logging.exception("Network error!")
+            except KeyboardInterrupt:
+                logging.exception("Keyboard interrupt. Shutting down!")
+                sys.exit(0)
+            except Exception:
+                logging.exception("Unknown error!")
+    finally:
+        with open('db.json', 'w') as f:
+            db_handle = f
+            json.dump(states, db_handle, default=str)
