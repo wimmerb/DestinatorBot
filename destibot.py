@@ -12,9 +12,6 @@ from urllib3.exceptions import HTTPError
 from bot_util import *
 
 
-# sticker bei confused/beim auswählen
-# user kann query saven
-# number ranges
 # mehr Kategorien, größere Auswahl innerhalb
 # feedback
 # Immer außerhalb von Query oder help: Buttons für Go, Category, Help bereithalten
