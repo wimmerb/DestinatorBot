@@ -262,7 +262,7 @@ def do_promode(state, message, info):
 
 def do_number_range(state, message, info):
     suggestions = default_suggestions
-    regex = "(-?[0-9]+)[-:](-?[0-9]+)$"
+    regex = "(-?[0-9]+)[–-:](-?[0-9]+)$"
     match = re.match(regex, message)
     a, b = match.groups()
     r = list(range(int(a), int(b) + 1))
