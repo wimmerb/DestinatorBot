@@ -356,7 +356,7 @@ def process_message(message, chatid):
 
 def process_sticker(sticker, chatid):
     print(json.dumps(sticker))
-    return confused
+    return [confused]
 
 
 def handle_update(update, basic_bot_url):
@@ -372,7 +372,7 @@ def handle_update(update, basic_bot_url):
         sticker = update["message"]["sticker"]
         responses = process_sticker(sticker, chatid)
     else:
-        responses = confused
+        responses = [confused]
     for i, response in enumerate(responses):
         requests.get(response.get_http_reply(basic_bot_url, chatid))
         print(response.get_http_reply(basic_bot_url, chatid))
