@@ -79,8 +79,7 @@ def do_go(state, message, info):
             state['phase'] = 'was_go'
             return send_choice(choice)
         else:
-            state['phase'] = 'expecting_help'
-            return [confused]
+            return send_help(state)
     else:
         return do_query(state, message, info, has_buttons=False)
 
