@@ -12,11 +12,6 @@ from urllib3.exceptions import HTTPError
 from bot_util import *
 
 
-# mehr Kategorien, größere Auswahl innerhalb
-# feedback
-# Immer außerhalb von Query oder help: Buttons für Go, Category, Help bereithalten
-# persönliche Eingaben speichern
-
 # Modes
 STANDARD = 0
 PRO = 1
@@ -67,9 +62,18 @@ def send_help(state):
     return [confused]
 
 
+def is_phase_in(*phases):
+    def check(state):
+        phase = state.get('phase', 'unknown')
+        return phase in phases
+    return check
+
+
+expecting_go = is_phase_in('expecting_go')
+
+
 def do_go(state, message, info):
-    phase = state.get('phase', 'unknown')
-    if (phase == 'expecting_go'):
+    if expecting_go(state):
         if state['choices'] != []:
             choice = choose(state['choices'])
             state['phase'] = 'was_go'
@@ -78,7 +82,6 @@ def do_go(state, message, info):
             state['phase'] = 'expecting_help'
             return [confused]
     else:
-        print(str(info))
         return do_query(state, message, info, has_buttons=False)
 
 
@@ -90,12 +93,26 @@ def do_abort(state, message, info):
     return [Text_Reply_Keyboard("Ok, let's try again!", default_suggestions)]
 
 
+expecting_bow = is_phase_in('was_go')
+
+
+def do_bow(state, message, info):
+    state['phase'] = 'default'
+    return [Text_Reply_Keyboard("What's up next?", default_suggestions)]
+
+
+expecting_again = expecting_bow
+
+
 def do_again(state, message, info):
-    if 'choices' in state and state['choices'] != [] and 'phase' in state and state['phase'] == 'was_go':
+    if 'choices' in state and state['choices'] != [] and expecting_again(state):
         choice = choose(state['choices'])
         return send_choice(choice)
     else:
         return send_help(state)
+
+
+expecting_yes = is_phase_in('expecting_help', 'proposed_game')
 
 
 def do_yes(state, message, info):
@@ -110,13 +127,15 @@ def do_yes(state, message, info):
         return send_help(state)
 
 
+expecting_no = expecting_yes
+
+
 def do_no(state, message, info):
-    phase = state.get('phase', 'unknown')
-    state['phase'] = 'no'
-    if phase == 'expecting_help' or phase == 'proposed_game':
+    if expecting_no(state):
         state['phase'] = 'default'
         return [Text_Reply_Keyboard("Ok, sure!", default_suggestions)]
     else:
+        state['phase'] = 'no'
         return send_help(state)
 
 
@@ -159,15 +178,10 @@ def do_query(state, message, info, init_choices=None, has_buttons=True):
 
 
 def do_persons(state, message, info):
-    # do default
-    return do_default(state, message)
-    # hidden code
-    """
     items = extract_choices(message)
     patterns = info['patterns']
     choices = info['choices']
 
-    
     def replace(choice):
         for pattern in patterns:
             if re.match(pattern, choice):
@@ -175,27 +189,11 @@ def do_persons(state, message, info):
         return [choice]
     choices = list(chain(*map(replace, items)))
     choice = choose(choices)
-    return three_dices + [choice]"""
+    return three_dices + [choice]
 
 
 def do_default_game(state, message, info):
     return do_query(state, message, {}, has_buttons=False)
-
-
-def do_default(state, message):
-    items = extract_choices(message)
-    phase = state.get('phase', 'unknown')
-    if phase == 'expecting_go':
-        state['choices'] += [message]
-        return []
-    elif phase == 'proposed_save':
-        return save_list(state, message)
-    elif len(items) <= 1 or state['mode'] < PRO:
-        return propose_game(state, message, {})
-    state['choices'] = items
-    state['phase'] = 'was_go'
-    choice = choose(items)
-    return send_choice(choice)
 
 
 def do_category(state, message, info):
@@ -206,7 +204,7 @@ def do_category(state, message, info):
     if state['mode'] >= PRO and 'lists' in state and state['lists']:
         categories.append('/mylists')
     return [Text_Reply_Keyboard(
-        "Here's a list of possible categories to choose from...", [categories + [u'❌']])]
+        "Here's a list of possible categories to choose from...", [[u'❌'] + categories])]
 
 
 def propose_save(state):
@@ -250,6 +248,10 @@ def do_show_lists(state, message, info):
     return [Text_Reply_Keyboard(msg, default_suggestions)]
 
 
+def is_promode(state):
+    return state['mode'] == PRO
+
+
 def do_promode(state, message, info):
     state['phase'] = 'default'
     if state['mode'] == PRO:
@@ -276,53 +278,69 @@ def do_number_range(state, message, info):
     return send_choice(choice)
 
 
+def do_default(state, message):
+    items = extract_choices(message)
+    phase = state.get('phase', 'unknown')
+    if phase == 'expecting_go':
+        state['choices'] += [message]
+        return []
+    elif phase == 'proposed_save':
+        return save_list(state, message)
+    elif len(items) <= 1 or state['mode'] < PRO:
+        return propose_game(state, message, {})
+    state['choices'] = items
+    state['phase'] = 'was_go'
+    choice = choose(items)
+    return send_choice(choice)
+
+
 modes_to_functions = {
-    "yes": do_yes,
-    "no": do_no,
-    "start": do_start,
-    "help": do_help,
-    "persons": do_persons,
-    "query": do_query,
-    "easteregg_query": do_query,
-    "go": do_go,
-    "abort": do_abort,
-    "again": do_again,
-    "categories": do_category,
-    "save": do_save,
-    "default_game": do_default_game,
-    "promode": do_promode,
-    "showlists": do_show_lists,
-    "number_range": do_number_range
+    "yes": (do_yes, expecting_yes),
+    "no": (do_no, expecting_no),
+    "start": (do_start, None),
+    "help": (do_help, None),
+    "persons": (do_persons, lambda x: False),
+    "query": (do_query, None),
+    "easteregg_query": (do_query, None),
+    "go": (do_go, expecting_go),
+    "abort": (do_abort, None),
+    "bow": (do_bow, expecting_bow),
+    "again": (do_again, expecting_again),
+    "categories": (do_category, None),
+    "save": (do_save, None),
+    "default_game": (do_default_game, None),
+    "promode": (do_promode, None),
+    "showlists": (do_show_lists, None),
+    "number_range": (do_number_range, is_promode)
 }
 
 
 def process_message(message, chatid):
     global states
-    # found "bug": wenn man einfach nur einmal ohne Kontext "jo" eingibt -> er landet bei do_yes
     if chatid not in states:
         state = {}
         state['mode'] = STANDARD
         states[chatid] = state
     state = states[chatid]
+    # Iterate through all modes and see if they are activated by the message
     for name, info in modes.items():
         patterns = info["patterns"]
+        # Set flags for regular expression matching
         ignore_case = info.get("ignore_case", True)
         flags = 0
         if ignore_case:
-            # (mehrere) Flags setzen mit bitwise or
             flags |= re.IGNORECASE
+        # Check if any patterns of the mode match the message
         for pattern in patterns:
-            # checke alle Patterns nach match
             if re.match(pattern, message, flags):
-                # handler für gematchtes Pattern raussuchen
-                handler = modes_to_functions[info['mode']]
-                # state: gespeichert zu chatid, enthält 'expecting_go', 'expecting_help', 'choices'
-                # message: gesendeter Text
-                # info: patterns, mode, choices
-                response = handler(state, message, info)
-                print(f"Message: {message}")
-                print(f"Phase: {state.get('phase', 'NULLPHASE')}\n")
-                return response
+                handler, activation = modes_to_functions[info['mode']]
+                # If the pattern matches the message and the mode is activated in the current state,
+                # call the mode's handler
+                if activation == None or activation(state):
+                    response = handler(state, message, info)
+                    print(f"Message: {message}")
+                    print(f"Phase: {state.get('phase', 'NULLPHASE')}\n")
+                    return response
     # No specific mode was identified, so check if any custom list was asked for
     if 'lists' in state and message.startswith('/'):
         msg = message.strip().lstrip('/')
@@ -338,7 +356,7 @@ def process_message(message, chatid):
 
 def process_sticker(sticker, chatid):
     print(json.dumps(sticker))
-    return []
+    return confused
 
 
 def handle_update(update, basic_bot_url):
@@ -380,7 +398,6 @@ def task():
             print(update)
             latest_update_served = update_id
             handle_update(update, basic_bot_url)
-
 
 
 if __name__ == "__main__":
