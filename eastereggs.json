@@ -168,22 +168,40 @@
         "patterns": [
             "/abort",
             "abort",
-            "❌",
-            "🙇"
+            "❌"
         ],
         "mode": "abort"
+    },
+    "bow": {
+        "patterns": [
+            "/bow",
+            "bo+w+",
+            "🙇"
+        ],
+        "mode": "bow"
     },
     "yes": {
         "patterns": [
             "/yes",
-            "👍"
+            "👍",
+            "ye*a*h*",
+            "ye+s+",
+            "ya+s+",
+            "jo+p+",
+            "[jy]u+p+",
+            "oke*",
+            "oki*",
+            "oka+y",
+            "su+re+"
         ],
         "mode": "yes"
     },
     "no": {
         "patterns": [
             "/no",
-            "👎"
+            "👎",
+            "nö*",
+            "no+(pe)?"
         ],
         "mode": "no"
     },
