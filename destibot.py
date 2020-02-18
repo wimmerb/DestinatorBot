@@ -205,7 +205,7 @@ def do_category(state, message, info):
     if state['mode'] >= PRO and 'lists' in state and state['lists']:
         categories.append('/mylists')
     return [Text_Reply_Keyboard(
-        "Here's a list of possible categories to choose from...", [categories + [u'❌']])]
+        "Here's a list of possible categories to choose from...", [[u'❌'] + categories])]
 
 
 def propose_save(state):
@@ -379,7 +379,6 @@ def task():
             print(update)
             latest_update_served = update_id
             handle_update(update, basic_bot_url)
-
 
 
 if __name__ == "__main__":
