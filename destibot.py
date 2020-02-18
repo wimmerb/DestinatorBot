@@ -141,7 +141,8 @@ def do_no(state, message, info):
 def do_start(state, message, info):
     state['phase'] = 'default'
     welcome = info['welcome']
-    gif_response = [Text_Reply("Here's a sample GIF:"), Animation_Reply("interactive_mode")]
+    gif_response = [Text_Reply("Here's a sample GIF:"),
+                    Animation_Reply("interactive_mode")]
     return [Text_Reply_Keyboard(welcome, default_suggestions)] + gif_response
 
 
@@ -150,8 +151,9 @@ def do_help(state, message, info):
     suggestion_text = '\n'.join(info['suggestions'])
     suggestions = [Text_Reply(suggestion_text)]
     welcome = Text_Reply_Keyboard(info['welcome'], [info['suggestions']])
-    gif_response = [Text_Reply("Here's a sample GIF:"), Animation_Reply("interactive_mode")]
-    return  gif_response + [welcome] + suggestions
+    gif_response = [Text_Reply("Here's a sample GIF:"),
+                    Animation_Reply("interactive_mode")]
+    return gif_response + [welcome] + suggestions
 
 
 def propose_game(state, message, info):
@@ -314,13 +316,7 @@ modes_to_functions = {
 }
 
 
-def process_message(message, chatid):
-    global states
-    if chatid not in states:
-        state = {}
-        state['mode'] = STANDARD
-        states[chatid] = state
-    state = states[chatid]
+def process_message(message, state):
     # Iterate through all modes and see if they are activated by the message
     for name, info in modes.items():
         patterns = info["patterns"]
@@ -353,25 +349,31 @@ def process_message(message, chatid):
     return response
 
 
-def process_sticker(sticker, chatid):
+def process_sticker(sticker, state):
     print(json.dumps(sticker))
-    return [confused]
+    return send_help(state)
 
 
 def handle_update(update, basic_bot_url):
+    global states
     send_message = "sendMessage"
     if "message" not in update or "from" not in update["message"]:
         # Not sure what to do here
         return
     chatid = str(update["message"]["from"]["id"])
+    if chatid not in states:
+        state = {}
+        state['mode'] = STANDARD
+        states[chatid] = state
+    state = states[chatid]
     if "text" in update["message"]:
         text = update["message"]["text"]
-        responses = process_message(text, chatid)
+        responses = process_message(text, state)
     elif "sticker" in update["message"]:
         sticker = update["message"]["sticker"]
-        responses = process_sticker(sticker, chatid)
+        responses = process_sticker(sticker, state)
     else:
-        responses = [confused]
+        responses = send_help(state)
     for i, response in enumerate(responses):
         requests.get(response.get_http_reply(basic_bot_url, chatid))
         print(response.get_http_reply(basic_bot_url, chatid))
