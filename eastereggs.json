@@ -210,7 +210,7 @@
             "/start"
         ],
         "mode": "start",
-        "welcome": "Hey there!\nThis is your destinator!\nCan I help you find your destiny today?\nIf you are unsure what to do, try /help"
+        "welcome": "Hey there!\nThis is your destinator!\nCan I help you find your destiny today?\nIf you are unsure of what to do, try /help"
     },
     "help": {
         "patterns": [
