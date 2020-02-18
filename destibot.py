@@ -131,7 +131,8 @@ def do_help(state, message, info):
     suggestion_text = '\n'.join(info['suggestions'])
     suggestions = [Text_Reply(suggestion_text)]
     welcome = Text_Reply_Keyboard(info['welcome'], [info['suggestions']])
-    return [welcome] + suggestions
+    gif = Animation_Reply()
+    return [welcome] + suggestions + [gif]
 
 
 def propose_game(state, message, info):
@@ -355,6 +356,7 @@ def handle_update(update, basic_bot_url):
         responses = confused
     for i, response in enumerate(responses):
         requests.get(response.get_http_reply(basic_bot_url, chatid))
+        print(response.get_http_reply(basic_bot_url, chatid))
         if i < (len(responses) - 1):
             time.sleep(0.3)
 
@@ -374,8 +376,10 @@ def task():
     for update in res:
         update_id = update["update_id"]
         if update_id > latest_update_served:
+            print(update)
             latest_update_served = update_id
             handle_update(update, basic_bot_url)
+
 
 
 if __name__ == "__main__":

@@ -2,3 +2,5 @@ config.json
 db.json
 destibot.log
 *.pyc
+Designs/
+stickersReduced.json
