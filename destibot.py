@@ -151,7 +151,7 @@ def do_query(state, message, info, init_choices=None, has_buttons=True):
     state['phase'] = 'expecting_go'
     state['choice_text'] = choice_text
     keyboard = Text_Reply_Keyboard(
-        choice_text, [list(info.get('choices', [])), ['🎲', '❌']])
+        choice_text, [['go', 'abort'], list(info.get('choices', []))])
     initial_choices = list(map(Text_Reply, init_choices))
     return [keyboard] + initial_choices
 

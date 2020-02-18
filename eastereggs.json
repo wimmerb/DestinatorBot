@@ -167,6 +167,7 @@
     "abort": {
         "patterns": [
             "/abort",
+            "abort",
             "❌",
             "🙇"
         ],

@@ -62,32 +62,29 @@ class Reply_Keyboard(Reply):
         return f"&reply_markup={json.dumps(self.val)}"
 
     def resize(self, x):
-        if len(x) != 2 and len(x) > 0:
-            return self.reshape(x[0], 3)
-        l = x[0]
+        if not len(x) > 0:
+            return [[]]
+        if len(x) != 2:
+            l = x[0]
+            nr = len(l)
+            if nr % 2 is 0 and nr % 3 is not 0:
+                return self.reshape(l, 2)
+            else:
+                return self.reshape(l, 3)
+        l = x[1]
         if not l:
-            return [x[1]]
+            return [x[0]]
         nr = len(l)
-        if nr % 3 is 0:
-            ret = self.reshape(l, 3)
-            ret.append(x[1])
-            return ret
-            # mache 3er-Chunks
-        if nr % 2 is 0:
+        if nr % 2 is 0 and nr % 3 is not 0:
             ret = self.reshape(l, 2)
-            ret.append(x[1])
+            ret[0:0] = [x[0]]
             return ret
             # mache 2er-Chunks
-        if nr % 3 is 1:
+        else:
             ret = self.reshape(l, 3)
-            ret[-1] += x[1]
+            ret[0:0] = [x[0]]
             return ret
-            # append x[1] ans letzte
-        if nr % 3 is 2:
-            ret = self.reshape(l, 3)
-            ret.append(x[1])
-            return ret
-            # halb fertig machen
+            # mache 3er-Chunks
 
     def reshape(self, l, size):
         ret = [[] for x in range(math.ceil(len(l)/size))]
