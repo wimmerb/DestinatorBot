@@ -40,7 +40,7 @@ class Sticker_Reply(Reply):
 
 class Random_Sticker_Reply(Sticker_Reply):
 
-    with open("stickersReduced.json") as f:
+    with open("stickers.json") as f:
         sticker_db = json.load(f)
 
     def __init__(self, emoji):
@@ -55,11 +55,14 @@ class Random_Sticker_Reply(Sticker_Reply):
 
 class Animation_Reply(Reply):
     send_message = "sendAnimation"
-    def __init__(self):
+    with open("gif_ids.json") as f:
+        gif_id_lookup = json.load(f)
+    def __init__(self, animation_key):
+        self.animation_key = animation_key
         return
     def give_payload(self):
-        bla = "http://ezgif.com-optimize-2.gif.mp4"
-        return f"&animation={bla}"
+        id = self.gif_id_lookup[self.animation_key]
+        return f"&animation={id}"
 
 class Reply_Keyboard(Reply):
     def __init__(self, keyboard):
