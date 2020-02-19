@@ -51,6 +51,8 @@ confused = Text_Reply_Keyboard(
 suggest_help = Text_Reply_Keyboard(
     "Ok, sure! Try to press this: /help", [["/help", "👎"]])
 default_suggestions = [[u'Start new game!', u'/categories', u'/help']]
+gif_text = "Here's a GIF explaining how it works:"
+help_gif_response = [Text_Reply(gif_text), Animation_Reply("interactive_mode")]
 
 
 def send_choice(choice):
@@ -141,9 +143,7 @@ def do_no(state, message, info):
 def do_start(state, message, info):
     state['phase'] = 'default'
     welcome = info['welcome']
-    gif_response = [Text_Reply("Here's a sample GIF:"),
-                    Animation_Reply("interactive_mode")]
-    return [Text_Reply_Keyboard(welcome, default_suggestions)] + gif_response
+    return [Text_Reply_Keyboard(welcome, default_suggestions)] + help_gif_response
 
 
 def do_help(state, message, info):
@@ -151,9 +151,7 @@ def do_help(state, message, info):
     suggestion_text = '\n'.join(info['suggestions'])
     suggestions = [Text_Reply(suggestion_text)]
     welcome = Text_Reply_Keyboard(info['welcome'], [info['suggestions']])
-    gif_response = [Text_Reply("Here's a sample GIF:"),
-                    Animation_Reply("interactive_mode")]
-    return gif_response + [welcome] + suggestions
+    return help_gif_response + [welcome] + suggestions
 
 
 def propose_game(state, message, info):
