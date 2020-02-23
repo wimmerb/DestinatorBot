@@ -56,7 +56,7 @@ help_gif_response = [Text_Reply(gif_text), Animation_Reply("interactive_mode")]
 
 
 def send_choice(choice):
-    return destiny + [Text_Reply(choice)]
+    return destiny + [choice]
 
 
 def send_help(state):
@@ -154,13 +154,13 @@ def do_help(state, message, info):
     return help_gif_response + [welcome] + suggestions
 
 
-def propose_game(state, message, info):
-    state['choices'] = [message]
+def propose_game(state, choice, info):
+    state['choices'] = [choice]
     state['phase'] = 'proposed_game'
-    proposal = f"Start a new game with this item: '{message}'?"
+    proposal = f"Start a new game with this item?"
     keyboard = Text_Reply_Keyboard(
         proposal, [["👍", "👎", "/help"]])
-    return [keyboard]
+    return [keyboard, choice]
 
 
 def do_query(state, message, info, init_choices=None, has_buttons=True):
@@ -172,8 +172,7 @@ def do_query(state, message, info, init_choices=None, has_buttons=True):
     state['choice_text'] = choice_text
     keyboard = Text_Reply_Keyboard(
         choice_text, [['go', 'abort'], list(info.get('choices', []))])
-    initial_choices = list(map(Text_Reply, init_choices))
-    return [keyboard] + initial_choices
+    return [keyboard] + init_choices
 
 
 def do_persons(state, message, info):
@@ -213,6 +212,16 @@ def propose_save(state):
     return [Text_Reply_Keyboard(msg, suggestions)]
 
 
+def get_choices(choices):
+    result = []
+    for choice in choices:
+        if isinstance(choice, Text_Reply):
+            result.append(choice.text)
+        else:
+            return None
+    return result
+
+
 def save_list(state, name):
     suggestions = default_suggestions
     if 'choices' not in state or state['choices'] == []:
@@ -222,10 +231,14 @@ def save_list(state, name):
         if 'lists' not in state:
             state['lists'] = {}
         save_name = name.split()[0].lstrip('/')
-        # Should we protect against overwriting?
-        state['lists'][save_name] = state['choices']
-        state['phase'] = 'saved_list'
-        msg = f"Saved list! Find it with /{save_name}"
+        choices = get_choices(state['choices'])
+        if choices == None:
+            msg = "Cannot save lists with stickers!"
+        else:
+            # Should we protect against overwriting?
+            state['lists'][save_name] = choices
+            state['phase'] = 'saved_list'
+            msg = f"Saved list! Find it with /{save_name}"
     return [Text_Reply_Keyboard(msg, suggestions)]
 
 
@@ -272,8 +285,9 @@ def do_number_range(state, message, info):
     if r == []:
         return [Text_Reply_Keyboard('You gave me nothing to choose from. Do you need /help?', [["/help", "👎"]])]
     state['phase'] = 'was_go'
-    state['choices'] = list(map(str, r))
-    choice = str(choose(r))
+    choices = [Text_Reply(str(x)) for x in r]
+    state['choices'] = choices
+    choice = choose(choices)
     return send_choice(choice)
 
 
@@ -281,16 +295,26 @@ def do_default(state, message):
     items = extract_choices(message)
     phase = state.get('phase', 'unknown')
     if phase == 'expecting_go':
-        state['choices'] += [message]
+        state['choices'] += [Text_Reply(message)]
         return []
     elif phase == 'proposed_save':
         return save_list(state, message)
     elif len(items) <= 1 or state['mode'] < PRO:
-        return propose_game(state, message, {})
-    state['choices'] = items
+        return propose_game(state, Text_Reply(message), {})
+    choices = [Text_Reply(str(x)) for x in items]
+    state['choices'] = choices
     state['phase'] = 'was_go'
-    choice = choose(items)
+    choice = choose(choices)
     return send_choice(choice)
+
+
+def do_default_media(state, message):
+    phase = state.get('phase', 'unknown')
+    if phase == 'expecting_go':
+        state['choices'] += [message]
+        return []
+    else:
+        return propose_game(state, message, {})
 
 
 modes_to_functions = {
@@ -348,8 +372,8 @@ def process_message(message, state):
 
 
 def process_sticker(sticker, state):
-    print(json.dumps(sticker))
-    return send_help(state)
+    message = Sticker_Reply(sticker['file_id'])
+    return do_default_media(state, message)
 
 
 def handle_update(update, basic_bot_url):
