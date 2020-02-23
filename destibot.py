@@ -276,6 +276,26 @@ def do_promode(state, message, info):
     return [welcome] + suggestions
 
 
+number_emojis = [u'0️⃣',u'1️⃣',u'2️⃣',u'3️⃣',u'4️⃣',u'5️⃣',u'6️⃣',u'7️⃣',u'8️⃣',u'9️⃣']
+
+
+def int_to_emoji_string(x):
+    result = u""
+    is_negative = False
+    if x < 0:
+        x = -x
+        is_negative = True
+    if x == 0:
+        return u"0️⃣"
+    while x > 0:
+        r = x % 10
+        result = number_emojis[r] + result
+        x = x // 10
+    if is_negative:
+        return u"➖" + result
+    return result
+
+
 def do_number_range(state, message, info):
     suggestions = default_suggestions
     regex = "(-?[0-9]+)[-–:](-?[0-9]+)$"
@@ -285,7 +305,7 @@ def do_number_range(state, message, info):
     if r == []:
         return [Text_Reply_Keyboard('You gave me nothing to choose from. Do you need /help?', [["/help", "👎"]])]
     state['phase'] = 'was_go'
-    choices = [Text_Reply(str(x)) for x in r]
+    choices = [Text_Reply(int_to_emoji_string(x)) for x in r]
     state['choices'] = choices
     choice = choose(choices)
     return send_choice(choice)
